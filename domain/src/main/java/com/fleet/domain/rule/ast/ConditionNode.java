@@ -1,8 +1,11 @@
 package com.fleet.domain.rule.ast;
 
 import com.fleet.domain.rule.vo.EventPayload;
+import lombok.Getter;
 
+@Getter
 public class ConditionNode implements RuleNode {
+    private final String type = "CONDITION";
     private final String field;
     private final String operator;
     private final Object value;

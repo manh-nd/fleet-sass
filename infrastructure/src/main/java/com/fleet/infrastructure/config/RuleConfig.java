@@ -17,4 +17,9 @@ public class RuleConfig {
             RuleEventPublisherPort ruleEventPublisherPort) {
         return new EvaluateRulesService(ruleRepositoryPort, cooldownPort, ruleEventPublisherPort);
     }
+
+    @Bean
+    public com.fleet.application.rule.usecase.ManageNotificationRuleUseCase manageNotificationRuleUseCase(RuleRepositoryPort ruleRepositoryPort) {
+        return new com.fleet.application.rule.ManageNotificationRuleService(ruleRepositoryPort);
+    }
 }

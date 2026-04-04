@@ -7,4 +7,5 @@ import com.fleet.domain.rule.model.NotificationRule;
 
 public interface RuleRepositoryPort {
     List<NotificationRule> findActiveRules(TenantId tenantId, String eventType);
+    void save(NotificationRule rule);
 }

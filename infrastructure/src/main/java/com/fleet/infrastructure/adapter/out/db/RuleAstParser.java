@@ -64,4 +64,13 @@ public class RuleAstParser {
             return valueNode.booleanValue();
         return valueNode.asString();
     }
+
+    public String serialize(RuleNode node) {
+        if (node == null) return null;
+        try {
+            return objectMapper.writeValueAsString(node);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize AST to JSON", e);
+        }
+    }
 }

@@ -2,6 +2,7 @@ package com.fleet.infrastructure.adapter.out.db;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.RuleNode;
 import com.fleet.domain.rule.model.NotificationRule;
@@ -100,5 +102,28 @@ class PostgresRuleRepositoryAdapterTest {
         List<NotificationRule> result = adapter.findActiveRules(new TenantId(tenantId), eventType);
 
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void shouldSaveRule() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        ServiceId serviceId = new ServiceId("S1");
+        RuleNode mockNode = mock(RuleNode.class);
+
+        NotificationRule rule = new NotificationRule(
+            ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10
+        );
+
+        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
+
+        assertDoesNotThrow(() -> adapter.save(rule));
+
+        when(astParser.parse(anyString())).thenReturn(mockNode);
+        List<NotificationRule> rules = adapter.findActiveRules(tenantId, "SPEEDING");
+        
+        assertEquals(1, rules.size());
+        assertEquals(ruleId, rules.get(0).getId());
+        assertEquals(10, rules.get(0).getCooldownMinutes());
     }
 }

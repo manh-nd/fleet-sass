@@ -3,8 +3,11 @@ package com.fleet.domain.rule.ast;
 import java.util.List;
 
 import com.fleet.domain.rule.vo.EventPayload;
+import lombok.Getter;
 
+@Getter
 public class LogicalNode implements RuleNode {
+    private final String type = "LOGICAL";
     private final String operator; // "AND" hoặc "OR"
     private final List<RuleNode> children;
 

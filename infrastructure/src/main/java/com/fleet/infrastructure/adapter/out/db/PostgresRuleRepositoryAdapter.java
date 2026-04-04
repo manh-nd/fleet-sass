@@ -50,4 +50,22 @@ public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {
                 })
                 .list();
     }
+
+    @Override
+    public void save(NotificationRule rule) {
+        String jsonbString = astParser.serialize(rule.getConditionRoot());
+        String sql = """
+            INSERT INTO notification_rules (id, tenant_id, service_id, event_type, conditions_json, cooldown_minutes, is_active)
+            VALUES (:id, :tenantId, :serviceId, :eventType, CAST(:conditions AS jsonb), :cooldownMinutes, :isActive)
+        """;
+        jdbcClient.sql(sql)
+            .param("id", rule.getId().value())
+            .param("tenantId", rule.getTenantId().value())
+            .param("serviceId", rule.getServiceId().value())
+            .param("eventType", rule.getEventType())
+            .param("conditions", jsonbString)
+            .param("cooldownMinutes", rule.getCooldownMinutes())
+            .param("isActive", rule.isActive())
+            .update();
+    }
 }
