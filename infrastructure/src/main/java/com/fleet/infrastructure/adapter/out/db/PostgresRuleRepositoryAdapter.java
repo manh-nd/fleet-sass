@@ -1,0 +1,53 @@
+package com.fleet.infrastructure.adapter.out.db;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+import com.fleet.domain.entitlement.vo.ServiceId;
+import com.fleet.domain.entitlement.vo.TenantId;
+import com.fleet.domain.rule.ast.RuleNode;
+import com.fleet.domain.rule.model.NotificationRule;
+import com.fleet.domain.rule.port.out.RuleRepositoryPort;
+import com.fleet.domain.rule.vo.RuleId;
+
+import lombok.RequiredArgsConstructor;
+
+@Repository
+@RequiredArgsConstructor
+public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {
+
+    private final JdbcClient jdbcClient;
+    private final RuleAstParser astParser;
+
+    @Override
+    public List<NotificationRule> findActiveRules(TenantId tenantId, String eventType) {
+        String sql = """
+                SELECT id, tenant_id, service_id, event_type, conditions_json, cooldown_minutes, is_active
+                FROM notification_rules
+                WHERE tenant_id = :tenantId
+                AND event_type = :eventType
+                AND is_active = true
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("tenantId", tenantId.value())
+                .param("eventType", eventType)
+                .query((rs, rowNum) -> {
+                    RuleId id = new RuleId(rs.getObject("id", UUID.class));
+                    TenantId tId = new TenantId(rs.getObject("tenant_id", UUID.class));
+                    ServiceId sId = new ServiceId(rs.getString("service_id"));
+                    String eType = rs.getString("event_type");
+                    boolean isActive = rs.getBoolean("is_active");
+                    String jsonbString = rs.getString("conditions_json");
+                    int cooldownMinutes = rs.getInt("cooldown_minutes");
+
+                    RuleNode rootCondition = astParser.parse(jsonbString);
+
+                    return new NotificationRule(id, tId, sId, eType, rootCondition, isActive, cooldownMinutes);
+                })
+                .list();
+    }
+}

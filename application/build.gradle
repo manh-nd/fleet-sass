@@ -1,0 +1,8 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    // Application phụ thuộc vào Domain
+    api project(':domain') 
+}

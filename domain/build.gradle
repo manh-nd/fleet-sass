@@ -1,0 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    // Để trống. Domain không phụ thuộc vào ai cả!
+}
