@@ -126,4 +126,50 @@ class PostgresRuleRepositoryAdapterTest {
         assertEquals(ruleId, rules.get(0).getId());
         assertEquals(10, rules.get(0).getCooldownMinutes());
     }
+
+    @Test
+    void shouldUpdateRule() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        ServiceId serviceId = new ServiceId("S1");
+        RuleNode mockNode = mock(RuleNode.class);
+
+        // Initial save
+        NotificationRule rule = new NotificationRule(
+            ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10
+        );
+        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
+        adapter.save(rule);
+
+        // Update
+        NotificationRule updateRule = new NotificationRule(
+            ruleId, tenantId, new ServiceId("S2"), "SPEEDING", mockNode, false, 15
+        );
+        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
+        assertDoesNotThrow(() -> adapter.update(updateRule));
+
+        // Verify it was updated (findActiveRules filters for is_active=true)
+        List<NotificationRule> rules = adapter.findActiveRules(tenantId, "SPEEDING");
+        assertTrue(rules.isEmpty(), "Rule should have been updated to inactive");
+    }
+
+    @Test
+    void shouldDeleteRule() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        ServiceId serviceId = new ServiceId("S1");
+        RuleNode mockNode = mock(RuleNode.class);
+
+        NotificationRule rule = new NotificationRule(
+            ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10
+        );
+        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
+        adapter.save(rule);
+
+        assertDoesNotThrow(() -> adapter.delete(ruleId, tenantId));
+
+        when(astParser.parse(anyString())).thenReturn(mockNode);
+        List<NotificationRule> rules = adapter.findActiveRules(tenantId, "SPEEDING");
+        assertTrue(rules.isEmpty(), "Rule should have been deleted");
+    }
 }

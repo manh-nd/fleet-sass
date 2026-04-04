@@ -99,4 +99,51 @@ class RuleControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void shouldUpdateRuleSuccessfully() throws Exception {
+        UUID ruleId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest request = new com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest(
+                tenantId,
+                "S1",
+                "SPEEDING",
+                Map.of("type", "CONDITION", "field", "speed", "operator", ">", "value", 90),
+                10,
+                false
+        );
+
+        ConditionNode mockNode = new ConditionNode("speed", ">", 90);
+        when(ruleAstParser.parse(any())).thenReturn(mockNode);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/rules/{ruleId}", ruleId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(manageRulesUseCase).updateRule(
+                eq(new com.fleet.domain.rule.vo.RuleId(ruleId)),
+                eq(new TenantId(tenantId)),
+                eq(new ServiceId("S1")),
+                eq("SPEEDING"),
+                eq(mockNode),
+                eq(10),
+                eq(false)
+        );
+    }
+
+    @Test
+    void shouldDeleteRuleSuccessfully() throws Exception {
+        UUID ruleId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/rules/{ruleId}", ruleId)
+                .param("tenantId", tenantId.toString()))
+                .andExpect(status().isOk());
+
+        verify(manageRulesUseCase).deleteRule(
+                eq(new com.fleet.domain.rule.vo.RuleId(ruleId)),
+                eq(new TenantId(tenantId))
+        );
+    }
 }

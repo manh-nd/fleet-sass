@@ -11,15 +11,14 @@ import com.fleet.application.entitlement.usecase.CheckEntitlementUseCase;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/entitlements")
+@RequiredArgsConstructor
 public class EntitlementController {
 
     private final CheckEntitlementUseCase checkEntitlementUseCase;
-
-    public EntitlementController(CheckEntitlementUseCase checkEntitlementUseCase) {
-        this.checkEntitlementUseCase = checkEntitlementUseCase;
-    }
 
     @GetMapping("/check")
     public boolean check(@RequestParam UUID tenantId, @RequestParam String serviceId) {

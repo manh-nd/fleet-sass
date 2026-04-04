@@ -68,4 +68,33 @@ public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {
             .param("isActive", rule.isActive())
             .update();
     }
+
+    @Override
+    public void update(NotificationRule rule) {
+        String jsonbString = astParser.serialize(rule.getConditionRoot());
+        String sql = """
+            UPDATE notification_rules
+            SET service_id = :serviceId, event_type = :eventType, conditions_json = CAST(:conditions AS jsonb),
+                cooldown_minutes = :cooldownMinutes, is_active = :isActive
+            WHERE id = :id AND tenant_id = :tenantId
+        """;
+        jdbcClient.sql(sql)
+            .param("id", rule.getId().value())
+            .param("tenantId", rule.getTenantId().value())
+            .param("serviceId", rule.getServiceId().value())
+            .param("eventType", rule.getEventType())
+            .param("conditions", jsonbString)
+            .param("cooldownMinutes", rule.getCooldownMinutes())
+            .param("isActive", rule.isActive())
+            .update();
+    }
+
+    @Override
+    public void delete(RuleId ruleId, TenantId tenantId) {
+        String sql = "DELETE FROM notification_rules WHERE id = :id AND tenant_id = :tenantId";
+        jdbcClient.sql(sql)
+            .param("id", ruleId.value())
+            .param("tenantId", tenantId.value())
+            .update();
+    }
 }

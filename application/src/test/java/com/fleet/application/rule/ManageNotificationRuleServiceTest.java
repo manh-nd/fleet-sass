@@ -5,6 +5,7 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.ConditionNode;
 import com.fleet.domain.rule.model.NotificationRule;
 import com.fleet.domain.rule.port.out.RuleRepositoryPort;
+import com.fleet.domain.rule.vo.RuleId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,5 +46,37 @@ class ManageNotificationRuleServiceTest {
         assertEquals(condition, savedRule.getConditionRoot());
         assertEquals(10, savedRule.getCooldownMinutes());
         assertTrue(savedRule.isActive());
+    }
+
+    @Test
+    void shouldUpdateRule() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        ServiceId serviceId = new ServiceId("S2");
+        ConditionNode condition = new ConditionNode("speed", ">", 90);
+
+        service.updateRule(ruleId, tenantId, serviceId, "SPEEDING_NEW", condition, 15, false);
+
+        ArgumentCaptor<NotificationRule> captor = ArgumentCaptor.forClass(NotificationRule.class);
+        verify(ruleRepository).update(captor.capture());
+
+        NotificationRule updatedRule = captor.getValue();
+        assertEquals(ruleId, updatedRule.getId());
+        assertEquals(tenantId, updatedRule.getTenantId());
+        assertEquals(serviceId, updatedRule.getServiceId());
+        assertEquals("SPEEDING_NEW", updatedRule.getEventType());
+        assertEquals(condition, updatedRule.getConditionRoot());
+        assertEquals(15, updatedRule.getCooldownMinutes());
+        assertFalse(updatedRule.isActive());
+    }
+
+    @Test
+    void shouldDeleteRule() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+
+        service.deleteRule(ruleId, tenantId);
+
+        verify(ruleRepository).delete(ruleId, tenantId);
     }
 }

@@ -30,4 +30,23 @@ public class ManageNotificationRuleService implements ManageNotificationRuleUseC
         );
         ruleRepository.save(rule);
     }
+
+    @Override
+    public void updateRule(RuleId ruleId, TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive) {
+        NotificationRule rule = new NotificationRule(
+            ruleId, 
+            tenantId, 
+            serviceId, 
+            eventType, 
+            conditionRoot, 
+            isActive, 
+            cooldownMinutes
+        );
+        ruleRepository.update(rule);
+    }
+
+    @Override
+    public void deleteRule(RuleId ruleId, TenantId tenantId) {
+        ruleRepository.delete(ruleId, tenantId);
+    }
 }

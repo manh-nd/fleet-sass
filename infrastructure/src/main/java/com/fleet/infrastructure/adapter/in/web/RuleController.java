@@ -25,18 +25,44 @@ public class RuleController {
         try {
             String conditionsJson = objectMapper.writeValueAsString(request.conditions());
             RuleNode root = ruleAstParser.parse(conditionsJson);
-            
+
             manageRulesUseCase.createRule(
-                new TenantId(request.tenantId()), 
-                new ServiceId(request.serviceId()), 
-                request.eventType(), 
-                root, 
-                request.cooldownMinutes(),
-                request.active()
-            );
+                    new TenantId(request.tenantId()),
+                    new ServiceId(request.serviceId()),
+                    request.eventType(),
+                    root,
+                    request.cooldownMinutes(),
+                    request.active());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @PutMapping("/{ruleId}")
+    public ResponseEntity<Void> updateRule(@PathVariable java.util.UUID ruleId,
+            @RequestBody com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest request) {
+        try {
+            String conditionsJson = objectMapper.writeValueAsString(request.conditions());
+            RuleNode root = ruleAstParser.parse(conditionsJson);
+
+            manageRulesUseCase.updateRule(
+                    new com.fleet.domain.rule.vo.RuleId(ruleId),
+                    new TenantId(request.tenantId()),
+                    new ServiceId(request.serviceId()),
+                    request.eventType(),
+                    root,
+                    request.cooldownMinutes(),
+                    request.active());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/{ruleId}")
+    public ResponseEntity<Void> deleteRule(@PathVariable java.util.UUID ruleId, @RequestParam java.util.UUID tenantId) {
+        manageRulesUseCase.deleteRule(new com.fleet.domain.rule.vo.RuleId(ruleId), new TenantId(tenantId));
+        return ResponseEntity.ok().build();
     }
 }
