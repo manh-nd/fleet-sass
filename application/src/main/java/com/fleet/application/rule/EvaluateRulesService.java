@@ -30,9 +30,11 @@ public class EvaluateRulesService implements EvaluateRulesUseCase {
                 continue;
             }
             if (rule.isSatisfiedBy(payload)) {
-                triggeredRules.add(rule);
-                cooldownPort.setCooldown(rule.getId(), payload.vehicleId(), rule.getCooldownMinutes());
-                eventPublisher.publish(new RuleTriggeredEvent(rule.getId(), payload));
+                // Try to atomically acquire the cooldown lock
+                if (cooldownPort.tryAcquireCooldown(rule.getId(), payload.vehicleId(), rule.getCooldownMinutes())) {
+                    triggeredRules.add(rule);
+                    eventPublisher.publish(new RuleTriggeredEvent(rule.getId(), payload));
+                }
             }
         }
         return triggeredRules;

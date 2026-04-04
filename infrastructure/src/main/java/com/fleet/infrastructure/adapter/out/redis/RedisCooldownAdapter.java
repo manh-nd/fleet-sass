@@ -36,4 +36,14 @@ public class RedisCooldownAdapter implements CooldownPort {
         // Lưu giá trị giả "LOCKED" và quan trọng nhất là set TTL tự động hết hạn
         redisTemplate.opsForValue().set(key, "LOCKED", cooldownMinutes, TimeUnit.MINUTES);
     }
+
+    @Override
+    public boolean tryAcquireCooldown(RuleId ruleId, String vehicleId, int cooldownMinutes) {
+        if (cooldownMinutes <= 0) {
+            return true; // No cooldown required, always acquired
+        }
+        
+        String key = buildKey(ruleId, vehicleId);
+        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, "LOCKED", cooldownMinutes, TimeUnit.MINUTES));
+    }
 }

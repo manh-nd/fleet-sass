@@ -6,6 +6,11 @@ import com.fleet.domain.rule.ast.RuleNode;
 import com.fleet.domain.rule.vo.EventPayload;
 import com.fleet.domain.rule.vo.RuleId;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public class NotificationRule {
     private final RuleId id;
     private final TenantId tenantId;
@@ -15,42 +20,10 @@ public class NotificationRule {
     private final boolean isActive;
     private final int cooldownMinutes;
 
-    public NotificationRule(RuleId id, TenantId tenantId, ServiceId serviceId,
-            String eventType, RuleNode conditionRoot, boolean isActive, int cooldownMinutes) {
-        this.id = id;
-        this.tenantId = tenantId;
-        this.serviceId = serviceId;
-        this.eventType = eventType;
-        this.conditionRoot = conditionRoot;
-        this.isActive = isActive;
-        this.cooldownMinutes = cooldownMinutes;
-    }
-
     // Business Behavior
     public boolean isSatisfiedBy(EventPayload payload) {
         if (!isActive || conditionRoot == null)
             return false;
         return conditionRoot.evaluate(payload);
-    }
-
-    // Getters...
-    public RuleId getId() {
-        return id;
-    }
-
-    public ServiceId getServiceId() {
-        return serviceId;
-    }
-
-    public TenantId getTenantId() {
-        return tenantId;
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public int getCooldownMinutes() {
-        return cooldownMinutes;
     }
 }
