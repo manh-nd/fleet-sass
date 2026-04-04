@@ -3,6 +3,7 @@ package com.fleet.infrastructure.adapter.out.db;
 import java.util.List;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
 
 import com.fleet.domain.notification.model.NotificationAction;
 import com.fleet.domain.notification.port.out.NotificationActionRepositoryPort;
@@ -10,6 +11,7 @@ import com.fleet.domain.rule.vo.RuleId;
 
 import lombok.RequiredArgsConstructor;
 
+@Repository
 @RequiredArgsConstructor
 public class PostgresActionRepositoryAdapter implements NotificationActionRepositoryPort {
 
