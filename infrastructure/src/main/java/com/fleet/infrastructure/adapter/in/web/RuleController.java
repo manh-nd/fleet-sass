@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/**
+ * Inbound adapter for REST operations on notification rules.
+ * Maps HTTP requests to {@link ManageNotificationRuleUseCase} calls.
+ */
 @RestController
 @RequestMapping("/api/v1/rules")
 @RequiredArgsConstructor

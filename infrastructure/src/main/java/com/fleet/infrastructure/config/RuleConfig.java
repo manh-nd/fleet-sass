@@ -11,6 +11,10 @@ import com.fleet.application.rule.usecase.ManageNotificationRuleUseCase;
 import com.fleet.domain.rule.port.out.CooldownPort;
 import com.fleet.domain.rule.port.out.RuleRepositoryPort;
 
+/**
+ * Spring configuration for rule-related beans.
+ * Defines the mapping between application use cases and their dependencies.
+ */
 @Configuration
 public class RuleConfig {
 

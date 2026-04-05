@@ -9,6 +9,9 @@ import com.fleet.domain.notification.port.out.NotificationActionRepositoryPort;
 import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
 import com.fleet.domain.notification.port.out.SubscriptionCheckPort;
 
+/**
+ * Spring configuration for notification-related beans.
+ */
 @Configuration
 public class NotificationConfig {
     @Bean

@@ -7,8 +7,11 @@ import com.fleet.application.entitlement.CheckEntitlementService;
 import com.fleet.application.entitlement.usecase.CheckEntitlementUseCase;
 import com.fleet.domain.entitlement.port.out.SubscriptionRepositoryPort;
 
+/**
+ * Spring configuration for entitlement-related beans.
+ */
 @Configuration
-public class DomainConfig {
+public class EntitlementConfig {
     @Bean
     public CheckEntitlementUseCase checkEntitlementUseCase(SubscriptionRepositoryPort repositoryPort) {
         return new CheckEntitlementService(repositoryPort);

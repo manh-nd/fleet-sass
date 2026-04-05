@@ -15,6 +15,10 @@ import com.fleet.domain.rule.vo.RuleId;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * PostgreSQL implementation of {@link RuleRepositoryPort}.
+ * Uses {@link JdbcClient} for persistence and handles rule conditions as JSONB.
+ */
 @Repository
 @RequiredArgsConstructor
 public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {

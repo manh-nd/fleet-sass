@@ -7,6 +7,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Redis-based implementation of {@link CooldownPort}.
+ * Uses Redis TTL and set-if-absent (NX) to manage vehicle-rule cooldowns across multiple instances.
+ */
 @Repository
 public class RedisCooldownAdapter implements CooldownPort {
 
