@@ -1,5 +1,8 @@
 package com.fleet.domain.notification.port.out;
 
+/**
+ * Outbound port for dispatching notifications through multiple channels.
+ */
 public interface NotificationDispatcherPort {
 
     void sendEmail(String to, String subject, String body);

@@ -6,6 +6,9 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.model.NotificationRule;
 import com.fleet.domain.rule.vo.RuleId;
 
+/**
+ * Outbound port for managing Notification Rule persistence.
+ */
 public interface RuleRepositoryPort {
     List<NotificationRule> findActiveRules(TenantId tenantId, String eventType);
     void save(NotificationRule rule);

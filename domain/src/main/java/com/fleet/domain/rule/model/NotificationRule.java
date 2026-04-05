@@ -9,6 +9,10 @@ import com.fleet.domain.rule.vo.RuleId;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * The NotificationRule aggregate is the core of the rule engine.
+ * It contains the condition tree (AST) to be evaluated against incoming events.
+ */
 @Getter
 @AllArgsConstructor
 public class NotificationRule {
