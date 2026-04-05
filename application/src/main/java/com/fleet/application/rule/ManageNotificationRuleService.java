@@ -11,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 
+/**
+ * Service implementation for managing Notification Rules.
+ * Handles the lifecycle (creation, update, deletion) of rules.
+ */
 @RequiredArgsConstructor
 public class ManageNotificationRuleService implements ManageNotificationRuleUseCase {
 

@@ -14,6 +14,10 @@ import com.fleet.domain.rule.vo.EventPayload;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service implementation for rule evaluation.
+ * Orchestrates rule selection, AST matching, cooldown checks, and event publishing.
+ */
 @RequiredArgsConstructor
 public class EvaluateRulesService implements EvaluateRulesUseCase {
 

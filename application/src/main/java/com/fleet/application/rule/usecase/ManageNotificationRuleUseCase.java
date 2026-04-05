@@ -6,6 +6,9 @@ import com.fleet.domain.rule.ast.RuleNode;
 
 import com.fleet.domain.rule.vo.RuleId;
 
+/**
+ * Inbound port for managing notification rules.
+ */
 public interface ManageNotificationRuleUseCase {
     void createRule(TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive);
     void updateRule(RuleId ruleId, TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive);

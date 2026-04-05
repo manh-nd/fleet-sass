@@ -14,6 +14,10 @@ import com.fleet.domain.rule.vo.RuleId;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service implementation for dispatching alerts.
+ * Coordinates multi-channel delivery (Email, SMS, Webhook) while enforcing GDPR opt-in policies.
+ */
 public class DispatchAlertService implements DispatchAlertUseCase {
 
     private final NotificationActionRepositoryPort actionRepo;

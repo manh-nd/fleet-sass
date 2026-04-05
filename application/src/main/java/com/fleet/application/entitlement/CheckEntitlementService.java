@@ -9,6 +9,10 @@ import com.fleet.domain.entitlement.vo.TenantId;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service implementation for checking service entitlements.
+ * Verifies if a tenant has a valid subscription for a given service at the current time.
+ */
 @RequiredArgsConstructor
 public class CheckEntitlementService implements CheckEntitlementUseCase {
 
