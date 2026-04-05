@@ -2,6 +2,7 @@ package com.fleet.application.notification;
 
 import com.fleet.domain.notification.model.EmailSubscription;
 import com.fleet.domain.notification.model.NotificationAction;
+import com.fleet.domain.notification.model.NotificationAction.ChannelType;
 import com.fleet.domain.notification.port.out.NotificationActionRepositoryPort;
 import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
 import com.fleet.domain.notification.port.out.SubscriptionCheckPort;
@@ -37,14 +38,14 @@ class DispatchAlertServiceTest {
     void shouldDispatchEmailWhenSubscribed() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
-        NotificationAction action = new NotificationAction(ruleId, "EMAIL", "test@test.com", "Speed {{speed}} reached!");
-        
+        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "test@test.com", "Speed {{speed}} reached!");
+
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
         when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("test@test.com"), ruleId))
-            .thenReturn(new EmailSubscription(new EmailAddress("test@test.com"), ruleId, EmailSubscription.SubscriptionStatus.SUBSCRIBED));
-            
+                .thenReturn(new EmailSubscription(new EmailAddress("test@test.com"), ruleId, EmailSubscription.SubscriptionStatus.SUBSCRIBED));
+
         service.dispatch(ruleId, payload);
-        
+
         verify(dispatcher).sendEmail("test@test.com", "Fleet Alert", "Speed 100 reached!");
     }
 
@@ -52,14 +53,29 @@ class DispatchAlertServiceTest {
     void shouldSkipEmailWhenUnsubscribed() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
-        NotificationAction action = new NotificationAction(ruleId, "EMAIL", "unsubscribed@test.com", "Speed reached!");
-        
+        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "unsubscribed@test.com", "Speed reached!");
+
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
         when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("unsubscribed@test.com"), ruleId))
-            .thenReturn(new EmailSubscription(new EmailAddress("unsubscribed@test.com"), ruleId, EmailSubscription.SubscriptionStatus.UNSUBSCRIBED));
-            
+                .thenReturn(new EmailSubscription(new EmailAddress("unsubscribed@test.com"), ruleId, EmailSubscription.SubscriptionStatus.UNSUBSCRIBED));
+
         service.dispatch(ruleId, payload);
-        
+
+        verify(dispatcher, never()).sendEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void shouldSkipEmailWhenPending() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        EventPayload payload = new EventPayload("V1", Map.of());
+        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "pending@test.com", "Alert!");
+
+        when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
+        when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("pending@test.com"), ruleId))
+                .thenReturn(new EmailSubscription(new EmailAddress("pending@test.com"), ruleId, EmailSubscription.SubscriptionStatus.PENDING));
+
+        service.dispatch(ruleId, payload);
+
         verify(dispatcher, never()).sendEmail(anyString(), anyString(), anyString());
     }
 
@@ -67,12 +83,12 @@ class DispatchAlertServiceTest {
     void shouldDispatchSms() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         EventPayload payload = new EventPayload("V1", Map.of("driver", "John"));
-        NotificationAction action = new NotificationAction(ruleId, "SMS", "0901234567", "Hi {{driver}}!");
-        
+        NotificationAction action = new NotificationAction(ruleId, ChannelType.SMS, "0901234567", "Hi {{driver}}!");
+
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
-        
+
         service.dispatch(ruleId, payload);
-        
+
         verify(dispatcher).sendSms("0901234567", "Hi John!");
     }
 
@@ -80,12 +96,12 @@ class DispatchAlertServiceTest {
     void shouldDispatchWebhook() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         EventPayload payload = new EventPayload("V1", Map.of("id", "123"));
-        NotificationAction action = new NotificationAction(ruleId, "WEBHOOK", "http://endpoint.com", "Event: {{id}}");
-        
+        NotificationAction action = new NotificationAction(ruleId, ChannelType.WEBHOOK, "http://endpoint.com", "Event: {{id}}");
+
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
-        
+
         service.dispatch(ruleId, payload);
-        
+
         verify(dispatcher).sendWebhook("http://endpoint.com", "Event: 123");
     }
 }

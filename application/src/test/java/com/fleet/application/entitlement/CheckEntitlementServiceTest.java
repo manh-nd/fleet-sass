@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,11 +31,11 @@ class CheckEntitlementServiceTest {
     void shouldReturnTrueWhenSubscriptionIsValid() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         ServiceId serviceId = new ServiceId("S1");
-        TenantSubscription sub = new TenantSubscription(tenantId, serviceId, 
-            TenantSubscription.SubscriptionStatus.ACTIVE, Instant.now().plus(1, ChronoUnit.DAYS));
-        
-        when(repository.findSubscription(tenantId, serviceId)).thenReturn(sub);
-        
+        TenantSubscription sub = new TenantSubscription(tenantId, serviceId,
+                TenantSubscription.SubscriptionStatus.ACTIVE, Instant.now().plus(1, ChronoUnit.DAYS));
+
+        when(repository.findSubscription(tenantId, serviceId)).thenReturn(Optional.of(sub));
+
         assertTrue(service.check(tenantId, serviceId));
     }
 
@@ -42,9 +43,9 @@ class CheckEntitlementServiceTest {
     void shouldReturnFalseWhenSubscriptionIsMissing() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         ServiceId serviceId = new ServiceId("S1");
-        
-        when(repository.findSubscription(tenantId, serviceId)).thenReturn(null);
-        
+
+        when(repository.findSubscription(tenantId, serviceId)).thenReturn(Optional.empty());
+
         assertFalse(service.check(tenantId, serviceId));
     }
 
@@ -52,11 +53,23 @@ class CheckEntitlementServiceTest {
     void shouldReturnFalseWhenSubscriptionIsExpired() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         ServiceId serviceId = new ServiceId("S1");
-        TenantSubscription sub = new TenantSubscription(tenantId, serviceId, 
-            TenantSubscription.SubscriptionStatus.ACTIVE, Instant.now().minus(1, ChronoUnit.DAYS));
-        
-        when(repository.findSubscription(tenantId, serviceId)).thenReturn(sub);
-        
+        TenantSubscription sub = new TenantSubscription(tenantId, serviceId,
+                TenantSubscription.SubscriptionStatus.ACTIVE, Instant.now().minus(1, ChronoUnit.DAYS));
+
+        when(repository.findSubscription(tenantId, serviceId)).thenReturn(Optional.of(sub));
+
+        assertFalse(service.check(tenantId, serviceId));
+    }
+
+    @Test
+    void shouldReturnFalseWhenSubscriptionIsSuspended() {
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        ServiceId serviceId = new ServiceId("S1");
+        TenantSubscription sub = new TenantSubscription(tenantId, serviceId,
+                TenantSubscription.SubscriptionStatus.SUSPENDED, Instant.now().plus(1, ChronoUnit.DAYS));
+
+        when(repository.findSubscription(tenantId, serviceId)).thenReturn(Optional.of(sub));
+
         assertFalse(service.check(tenantId, serviceId));
     }
 }

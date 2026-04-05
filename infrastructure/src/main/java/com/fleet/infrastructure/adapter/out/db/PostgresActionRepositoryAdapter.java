@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.fleet.domain.notification.model.NotificationAction;
+import com.fleet.domain.notification.model.NotificationAction.ChannelType;
 import com.fleet.domain.notification.port.out.NotificationActionRepositoryPort;
 import com.fleet.domain.rule.vo.RuleId;
 
@@ -29,10 +30,9 @@ public class PostgresActionRepositoryAdapter implements NotificationActionReposi
                 .param("ruleId", ruleId.value())
                 .query((rs, rowNum) -> new NotificationAction(
                         ruleId,
-                        rs.getString("channel_type"),
+                        ChannelType.fromString(rs.getString("channel_type")),
                         rs.getString("recipient"),
                         rs.getString("message_template")))
                 .list();
     }
-
 }

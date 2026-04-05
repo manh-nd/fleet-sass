@@ -3,6 +3,7 @@ package com.fleet.domain.rule.model;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.ConditionNode;
+import com.fleet.domain.rule.ast.Operator;
 import com.fleet.domain.rule.vo.EventPayload;
 import com.fleet.domain.rule.vo.RuleId;
 import org.junit.jupiter.api.Test;
@@ -16,39 +17,44 @@ class NotificationRuleTest {
 
     @Test
     void shouldBeSatisfiedByPayload() {
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        TenantId tenantId = new TenantId(UUID.randomUUID());
-        ServiceId serviceId = new ServiceId("s1");
-        ConditionNode speedHigh = new ConditionNode("speed", ">", 80);
-        
-        NotificationRule rule = new NotificationRule(ruleId, tenantId, serviceId, "SPEEDING", speedHigh, true, 5);
-        
-        EventPayload payload = new EventPayload("v1", Map.of("speed", 100));
-        assertTrue(rule.isSatisfiedBy(payload));
+        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
+        NotificationRule rule = buildRule(speedHigh, true);
+
+        assertTrue(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 100))));
+    }
+
+    @Test
+    void shouldNotBeSatisfiedWhenConditionDoesNotMatch() {
+        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
+        NotificationRule rule = buildRule(speedHigh, true);
+
+        // speed 60 does NOT exceed threshold of 80
+        assertFalse(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 60))));
     }
 
     @Test
     void shouldNotBeSatisfiedWhenInactive() {
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        TenantId tenantId = new TenantId(UUID.randomUUID());
-        ServiceId serviceId = new ServiceId("s1");
-        ConditionNode speedHigh = new ConditionNode("speed", ">", 80);
-        
-        NotificationRule rule = new NotificationRule(ruleId, tenantId, serviceId, "SPEEDING", speedHigh, false, 5);
-        
-        EventPayload payload = new EventPayload("v1", Map.of("speed", 100));
-        assertFalse(rule.isSatisfiedBy(payload));
+        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
+        NotificationRule rule = buildRule(speedHigh, false);
+
+        assertFalse(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 100))));
     }
 
     @Test
     void shouldNotBeSatisfiedWhenConditionRootIsNull() {
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        TenantId tenantId = new TenantId(UUID.randomUUID());
-        ServiceId serviceId = new ServiceId("s1");
-        
-        NotificationRule rule = new NotificationRule(ruleId, tenantId, serviceId, "SPEEDING", null, true, 5);
-        
-        EventPayload payload = new EventPayload("v1", Map.of("speed", 100));
-        assertFalse(rule.isSatisfiedBy(payload));
+        NotificationRule rule = buildRule(null, true);
+
+        assertFalse(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 100))));
+    }
+
+    private NotificationRule buildRule(ConditionNode condition, boolean isActive) {
+        return new NotificationRule(
+                new RuleId(UUID.randomUUID()),
+                new TenantId(UUID.randomUUID()),
+                new ServiceId("s1"),
+                "SPEEDING",
+                condition,
+                isActive,
+                5);
     }
 }

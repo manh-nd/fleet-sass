@@ -3,6 +3,7 @@ package com.fleet.application.rule;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.ConditionNode;
+import com.fleet.domain.rule.ast.Operator;
 import com.fleet.domain.rule.model.NotificationRule;
 import com.fleet.domain.rule.port.out.RuleRepositoryPort;
 import com.fleet.domain.rule.vo.RuleId;
@@ -31,7 +32,7 @@ class ManageNotificationRuleServiceTest {
     void shouldCreateAndSaveRule() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         ServiceId serviceId = new ServiceId("S1");
-        ConditionNode condition = new ConditionNode("speed", ">", 80);
+        ConditionNode condition = new ConditionNode("speed", Operator.GT, 80);
 
         service.createRule(tenantId, serviceId, "SPEEDING", condition, 10, true);
 
@@ -53,7 +54,7 @@ class ManageNotificationRuleServiceTest {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         TenantId tenantId = new TenantId(UUID.randomUUID());
         ServiceId serviceId = new ServiceId("S2");
-        ConditionNode condition = new ConditionNode("speed", ">", 90);
+        ConditionNode condition = new ConditionNode("speed", Operator.GT, 90);
 
         service.updateRule(ruleId, tenantId, serviceId, "SPEEDING_NEW", condition, 15, false);
 

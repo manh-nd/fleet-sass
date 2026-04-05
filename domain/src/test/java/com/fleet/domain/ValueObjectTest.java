@@ -17,7 +17,7 @@ class ValueObjectTest {
         assertThrows(IllegalArgumentException.class, () -> new EmailAddress(null));
         assertThrows(IllegalArgumentException.class, () -> new EmailAddress(""));
         assertThrows(IllegalArgumentException.class, () -> new EmailAddress("  "));
-        
+
         EmailAddress email = new EmailAddress("test@example.com");
         assertEquals("test@example.com", email.value());
     }
@@ -31,7 +31,9 @@ class ValueObjectTest {
     }
 
     @Test
-    void testRuleId() {
+    void testRuleIdValidation() {
+        // RuleId should now guard against null (parity with TenantId/ServiceId)
+        assertThrows(NullPointerException.class, () -> new RuleId(null));
         UUID uuid = UUID.randomUUID();
         RuleId id = new RuleId(uuid);
         assertEquals(uuid, id.value());

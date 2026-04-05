@@ -5,6 +5,7 @@ import com.fleet.application.rule.usecase.ManageNotificationRuleUseCase;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.ConditionNode;
+import com.fleet.domain.rule.ast.Operator;
 import com.fleet.domain.rule.vo.RuleId;
 import com.fleet.infrastructure.adapter.in.web.dto.CreateRuleRequest;
 import com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest;
@@ -65,7 +66,7 @@ class RuleControllerTest {
                 true
         );
 
-        ConditionNode mockNode = new ConditionNode("speed", ">", 80);
+        ConditionNode mockNode = new ConditionNode("speed", Operator.GT, 80);
         when(ruleAstParser.parse(any())).thenReturn(mockNode);
 
         mockMvc.perform(post("/api/v1/rules")
@@ -116,7 +117,7 @@ class RuleControllerTest {
                 false
         );
 
-        ConditionNode mockNode = new ConditionNode("speed", ">", 90);
+        ConditionNode mockNode = new ConditionNode("speed", Operator.GT, 90);
         when(ruleAstParser.parse(any())).thenReturn(mockNode);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/rules/{ruleId}", ruleId)

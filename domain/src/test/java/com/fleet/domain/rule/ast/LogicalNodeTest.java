@@ -12,42 +12,59 @@ class LogicalNodeTest {
 
     @Test
     void shouldEvaluateAndLogic() {
-        ConditionNode speedHigh = new ConditionNode("speed", ">", 80);
-        ConditionNode engineHot = new ConditionNode("temp", ">", 100);
-        LogicalNode andNode = new LogicalNode("AND", List.of(speedHigh, engineHot));
+        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
+        ConditionNode engineHot = new ConditionNode("temp", Operator.GT, 100);
+        LogicalNode andNode = new LogicalNode(LogicalOperator.AND, List.of(speedHigh, engineHot));
 
-        EventPayload payload = new EventPayload("v1", Map.of("speed", 100, "temp", 120));
-        assertTrue(andNode.evaluate(payload));
-
-        payload = new EventPayload("v1", Map.of("speed", 100, "temp", 80));
-        assertFalse(andNode.evaluate(payload));
+        assertTrue(andNode.evaluate(new EventPayload("v1", Map.of("speed", 100, "temp", 120))));
+        assertFalse(andNode.evaluate(new EventPayload("v1", Map.of("speed", 100, "temp", 80))));
     }
 
     @Test
     void shouldEvaluateOrLogic() {
-        ConditionNode speedHigh = new ConditionNode("speed", ">", 80);
-        ConditionNode engineHot = new ConditionNode("temp", ">", 100);
-        LogicalNode orNode = new LogicalNode("OR", List.of(speedHigh, engineHot));
+        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
+        ConditionNode engineHot = new ConditionNode("temp", Operator.GT, 100);
+        LogicalNode orNode = new LogicalNode(LogicalOperator.OR, List.of(speedHigh, engineHot));
 
-        EventPayload payload = new EventPayload("v1", Map.of("speed", 100, "temp", 80));
-        assertTrue(orNode.evaluate(payload));
-
-        payload = new EventPayload("v1", Map.of("speed", 60, "temp", 80));
-        assertFalse(orNode.evaluate(payload));
+        assertTrue(orNode.evaluate(new EventPayload("v1", Map.of("speed", 100, "temp", 80))));
+        assertFalse(orNode.evaluate(new EventPayload("v1", Map.of("speed", 60, "temp", 80))));
     }
 
     @Test
-    void shouldReturnTrueForEmptyChildren() {
-        LogicalNode andNode = new LogicalNode("AND", List.of());
-        EventPayload payload = new EventPayload("v1", Map.of());
-        assertTrue(andNode.evaluate(payload));
+    void shouldThrowWhenChildrenIsEmpty() {
+        // Empty children list is a configuration error — must fail fast
+        assertThrows(IllegalStateException.class,
+                () -> new LogicalNode(LogicalOperator.AND, List.of()));
     }
 
     @Test
-    void shouldThrowExceptionForUnsupportedOperator() {
-        ConditionNode speedHigh = new ConditionNode("speed", ">", 80);
-        LogicalNode xorNode = new LogicalNode("XOR", List.of(speedHigh));
-        EventPayload payload = new EventPayload("v1", Map.of("speed", 100));
-        assertThrows(IllegalArgumentException.class, () -> xorNode.evaluate(payload));
+    void shouldThrowWhenChildrenIsNull() {
+        assertThrows(IllegalStateException.class,
+                () -> new LogicalNode(LogicalOperator.AND, null));
+    }
+
+    @Test
+    void shouldThrowWhenOperatorIsNull() {
+        ConditionNode node = new ConditionNode("speed", Operator.GT, 80);
+        assertThrows(IllegalArgumentException.class,
+                () -> new LogicalNode(null, List.of(node)));
+    }
+
+    @Test
+    void shouldEvaluateNestedAndInsideOr() {
+        // (speed > 80 AND temp > 100) OR (fuel < 10)
+        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
+        ConditionNode engineHot = new ConditionNode("temp", Operator.GT, 100);
+        LogicalNode innerAnd = new LogicalNode(LogicalOperator.AND, List.of(speedHigh, engineHot));
+
+        ConditionNode lowFuel = new ConditionNode("fuel", Operator.LT, 10);
+        LogicalNode outerOr = new LogicalNode(LogicalOperator.OR, List.of(innerAnd, lowFuel));
+
+        // Triggered by compound AND condition
+        assertTrue(outerOr.evaluate(new EventPayload("v1", Map.of("speed", 100, "temp", 120, "fuel", 50))));
+        // Triggered by fuel alone
+        assertTrue(outerOr.evaluate(new EventPayload("v1", Map.of("speed", 60, "temp", 80, "fuel", 5))));
+        // Neither condition met
+        assertFalse(outerOr.evaluate(new EventPayload("v1", Map.of("speed", 60, "temp", 80, "fuel", 50))));
     }
 }

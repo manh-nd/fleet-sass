@@ -12,38 +12,47 @@ class EmailSubscriptionTest {
 
     @Test
     void shouldCanSendWhenSubscribed() {
-        EmailAddress email = new EmailAddress("test@example.com");
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        EmailSubscription subscription = new EmailSubscription(email, ruleId, EmailSubscription.SubscriptionStatus.SUBSCRIBED);
-        
-        assertTrue(subscription.canSend());
+        EmailSubscription sub = build(EmailSubscription.SubscriptionStatus.SUBSCRIBED);
+        assertTrue(sub.canSend());
     }
 
     @Test
     void shouldNotCanSendWhenPending() {
-        EmailAddress email = new EmailAddress("test@example.com");
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        EmailSubscription subscription = new EmailSubscription(email, ruleId, EmailSubscription.SubscriptionStatus.PENDING);
-        
-        assertFalse(subscription.canSend());
+        EmailSubscription sub = build(EmailSubscription.SubscriptionStatus.PENDING);
+        assertFalse(sub.canSend());
     }
 
     @Test
     void shouldNotCanSendWhenUnsubscribed() {
-        EmailAddress email = new EmailAddress("test@example.com");
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        EmailSubscription subscription = new EmailSubscription(email, ruleId, EmailSubscription.SubscriptionStatus.UNSUBSCRIBED);
-        
-        assertFalse(subscription.canSend());
+        EmailSubscription sub = build(EmailSubscription.SubscriptionStatus.UNSUBSCRIBED);
+        assertFalse(sub.canSend());
     }
 
     @Test
-    void shouldGettersWorkCorrectly() {
+    void shouldExposeEmailAndRuleId() {
         EmailAddress email = new EmailAddress("test@example.com");
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EmailSubscription subscription = new EmailSubscription(email, ruleId, EmailSubscription.SubscriptionStatus.SUBSCRIBED);
-        
-        assertEquals(email, subscription.getEmail());
-        assertEquals(ruleId, subscription.getRuleId());
+        EmailSubscription sub = new EmailSubscription(email, ruleId, EmailSubscription.SubscriptionStatus.SUBSCRIBED);
+
+        assertEquals(email, sub.getEmail());
+        assertEquals(ruleId, sub.getRuleId());
+    }
+
+    @Test
+    void shouldAllowNullRuleIdForGlobalSubscription() {
+        // null ruleId = global unsubscribe
+        EmailAddress email = new EmailAddress("global@example.com");
+        EmailSubscription sub = new EmailSubscription(email, null, EmailSubscription.SubscriptionStatus.UNSUBSCRIBED);
+        assertNull(sub.getRuleId());
+        assertFalse(sub.canSend());
+    }
+
+    // ---- Helper ----
+
+    private EmailSubscription build(EmailSubscription.SubscriptionStatus status) {
+        return new EmailSubscription(
+                new EmailAddress("test@example.com"),
+                new RuleId(UUID.randomUUID()),
+                status);
     }
 }
