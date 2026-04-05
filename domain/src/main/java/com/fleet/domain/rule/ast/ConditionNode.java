@@ -22,10 +22,25 @@ public class ConditionNode implements RuleNode {
         if (actualValue == null)
             return false;
 
-        return switch (operator) {
+        return switch (operator.toUpperCase()) {
             case ">" -> compareNumeric(actualValue, value) > 0;
             case "<" -> compareNumeric(actualValue, value) < 0;
+            case ">=" -> compareNumeric(actualValue, value) >= 0;
+            case "<=" -> compareNumeric(actualValue, value) <= 0;
             case "==" -> actualValue.equals(value);
+            case "!=" -> !actualValue.equals(value);
+            case "IN" -> {
+                if (value instanceof java.util.Collection<?> coll) {
+                    yield coll.contains(actualValue);
+                }
+                yield false;
+            }
+            case "NOT_IN" -> {
+                if (value instanceof java.util.Collection<?> coll) {
+                    yield !coll.contains(actualValue);
+                }
+                yield true;
+            }
             default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
         };
     }

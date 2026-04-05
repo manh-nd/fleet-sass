@@ -2,6 +2,9 @@ package com.fleet.domain.notification.model;
 
 import com.fleet.domain.rule.vo.RuleId;
 
+import lombok.Getter;
+
+@Getter
 public class NotificationAction {
     private final RuleId ruleId;
     private final String channelType; // "EMAIL", "SMS", "WEBHOOK"
@@ -13,18 +16,5 @@ public class NotificationAction {
         this.channelType = channelType;
         this.recipient = recipient;
         this.messageTemplate = messageTemplate;
-    }
-
-    // Getters
-    public String getChannelType() {
-        return channelType;
-    }
-
-    public String getRecipient() {
-        return recipient;
-    }
-
-    public String getMessageTemplate() {
-        return messageTemplate;
     }
 }

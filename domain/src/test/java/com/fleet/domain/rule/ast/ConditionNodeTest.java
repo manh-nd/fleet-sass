@@ -47,6 +47,45 @@ class ConditionNodeTest {
     }
 
     @Test
+    void shouldEvaluateGreaterThanOrEqual() {
+        ConditionNode node = new ConditionNode("speed", ">=", 80);
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("speed", 100))));
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("speed", 80))));
+        assertFalse(node.evaluate(new EventPayload("v1", Map.of("speed", 60))));
+    }
+
+    @Test
+    void shouldEvaluateLessThanOrEqual() {
+        ConditionNode node = new ConditionNode("speed", "<=", 80);
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("speed", 60))));
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("speed", 80))));
+        assertFalse(node.evaluate(new EventPayload("v1", Map.of("speed", 100))));
+    }
+
+    @Test
+    void shouldEvaluateNotEquals() {
+        ConditionNode node = new ConditionNode("status", "!=", "ONLINE");
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "OFFLINE"))));
+        assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "ONLINE"))));
+    }
+
+    @Test
+    void shouldEvaluateIn() {
+        ConditionNode node = new ConditionNode("status", "IN", java.util.List.of("ONLINE", "IDLE"));
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "ONLINE"))));
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "IDLE"))));
+        assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "OFFLINE"))));
+    }
+
+    @Test
+    void shouldEvaluateNotIn() {
+        ConditionNode node = new ConditionNode("status", "NOT_IN", java.util.List.of("OFFLINE", "ERROR"));
+        assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "ONLINE"))));
+        assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "OFFLINE"))));
+        assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "ERROR"))));
+    }
+
+    @Test
     void shouldThrowExceptionForUnsupportedOperator() {
         ConditionNode node = new ConditionNode("speed", "!", 80);
         EventPayload payload = new EventPayload("v1", Map.of("speed", 100));

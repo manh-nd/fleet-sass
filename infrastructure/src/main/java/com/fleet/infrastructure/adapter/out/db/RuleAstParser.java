@@ -62,6 +62,13 @@ public class RuleAstParser {
             return valueNode.numberValue();
         if (valueNode.isBoolean())
             return valueNode.booleanValue();
+        if (valueNode.isArray()) {
+            List<Object> list = new ArrayList<>();
+            for (JsonNode element : valueNode) {
+                list.add(extractValue(element));
+            }
+            return list;
+        }
         return valueNode.asString();
     }
 
