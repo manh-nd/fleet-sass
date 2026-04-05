@@ -5,7 +5,9 @@ import com.fleet.application.rule.usecase.ManageNotificationRuleUseCase;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.ConditionNode;
+import com.fleet.domain.rule.vo.RuleId;
 import com.fleet.infrastructure.adapter.in.web.dto.CreateRuleRequest;
+import com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest;
 import com.fleet.infrastructure.adapter.out.db.RuleAstParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Map;
@@ -104,7 +107,7 @@ class RuleControllerTest {
     void shouldUpdateRuleSuccessfully() throws Exception {
         UUID ruleId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest request = new com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest(
+        UpdateRuleRequest request = new UpdateRuleRequest(
                 tenantId,
                 "S1",
                 "SPEEDING",
@@ -116,13 +119,13 @@ class RuleControllerTest {
         ConditionNode mockNode = new ConditionNode("speed", ">", 90);
         when(ruleAstParser.parse(any())).thenReturn(mockNode);
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/rules/{ruleId}", ruleId)
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/rules/{ruleId}", ruleId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
         verify(manageRulesUseCase).updateRule(
-                eq(new com.fleet.domain.rule.vo.RuleId(ruleId)),
+                eq(new RuleId(ruleId)),
                 eq(new TenantId(tenantId)),
                 eq(new ServiceId("S1")),
                 eq("SPEEDING"),
@@ -137,12 +140,12 @@ class RuleControllerTest {
         UUID ruleId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/rules/{ruleId}", ruleId)
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/rules/{ruleId}", ruleId)
                 .param("tenantId", tenantId.toString()))
                 .andExpect(status().isOk());
 
         verify(manageRulesUseCase).deleteRule(
-                eq(new com.fleet.domain.rule.vo.RuleId(ruleId)),
+                eq(new RuleId(ruleId)),
                 eq(new TenantId(tenantId))
         );
     }

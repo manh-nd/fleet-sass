@@ -3,9 +3,11 @@ package com.fleet.infrastructure.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fleet.application.rule.ManageNotificationRuleService;
 import com.fleet.application.rule.EvaluateRulesService;
 import com.fleet.application.rule.port.out.RuleEventPublisherPort;
 import com.fleet.application.rule.usecase.EvaluateRulesUseCase;
+import com.fleet.application.rule.usecase.ManageNotificationRuleUseCase;
 import com.fleet.domain.rule.port.out.CooldownPort;
 import com.fleet.domain.rule.port.out.RuleRepositoryPort;
 
@@ -19,7 +21,7 @@ public class RuleConfig {
     }
 
     @Bean
-    public com.fleet.application.rule.usecase.ManageNotificationRuleUseCase manageNotificationRuleUseCase(RuleRepositoryPort ruleRepositoryPort) {
-        return new com.fleet.application.rule.ManageNotificationRuleService(ruleRepositoryPort);
+    public ManageNotificationRuleUseCase manageNotificationRuleUseCase(RuleRepositoryPort ruleRepositoryPort) {
+        return new ManageNotificationRuleService(ruleRepositoryPort);
     }
 }

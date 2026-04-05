@@ -3,6 +3,7 @@ package com.fleet.domain.rule.ast;
 import com.fleet.domain.rule.vo.EventPayload;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,7 +72,7 @@ class ConditionNodeTest {
 
     @Test
     void shouldEvaluateIn() {
-        ConditionNode node = new ConditionNode("status", "IN", java.util.List.of("ONLINE", "IDLE"));
+        ConditionNode node = new ConditionNode("status", "IN", List.of("ONLINE", "IDLE"));
         assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "ONLINE"))));
         assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "IDLE"))));
         assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "OFFLINE"))));
@@ -79,7 +80,7 @@ class ConditionNodeTest {
 
     @Test
     void shouldEvaluateNotIn() {
-        ConditionNode node = new ConditionNode("status", "NOT_IN", java.util.List.of("OFFLINE", "ERROR"));
+        ConditionNode node = new ConditionNode("status", "NOT_IN", List.of("OFFLINE", "ERROR"));
         assertTrue(node.evaluate(new EventPayload("v1", Map.of("status", "ONLINE"))));
         assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "OFFLINE"))));
         assertFalse(node.evaluate(new EventPayload("v1", Map.of("status", "ERROR"))));

@@ -26,9 +26,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.springframework.context.annotation.Import;
+
 @SpringBootTest
 @Testcontainers
-@org.springframework.context.annotation.Import(EvaluateRulesIntegrationTest.TestConfig.class)
+@Import(EvaluateRulesIntegrationTest.TestConfig.class)
 public class EvaluateRulesIntegrationTest {
 
     @Container

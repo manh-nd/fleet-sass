@@ -3,6 +3,8 @@ package com.fleet.domain.rule.ast;
 import com.fleet.domain.rule.vo.EventPayload;
 import lombok.Getter;
 
+import java.util.Collection;
+
 @Getter
 public class ConditionNode implements RuleNode {
     private final String type = "CONDITION";
@@ -30,13 +32,13 @@ public class ConditionNode implements RuleNode {
             case "==" -> actualValue.equals(value);
             case "!=" -> !actualValue.equals(value);
             case "IN" -> {
-                if (value instanceof java.util.Collection<?> coll) {
+                if (value instanceof Collection<?> coll) {
                     yield coll.contains(actualValue);
                 }
                 yield false;
             }
             case "NOT_IN" -> {
-                if (value instanceof java.util.Collection<?> coll) {
+                if (value instanceof Collection<?> coll) {
                     yield !coll.contains(actualValue);
                 }
                 yield true;

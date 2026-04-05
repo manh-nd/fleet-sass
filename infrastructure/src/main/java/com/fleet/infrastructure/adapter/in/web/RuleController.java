@@ -5,11 +5,15 @@ import com.fleet.application.rule.usecase.ManageNotificationRuleUseCase;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.RuleNode;
+import com.fleet.domain.rule.vo.RuleId;
 import com.fleet.infrastructure.adapter.in.web.dto.CreateRuleRequest;
+import com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest;
 import com.fleet.infrastructure.adapter.out.db.RuleAstParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/rules")
@@ -40,14 +44,14 @@ public class RuleController {
     }
 
     @PutMapping("/{ruleId}")
-    public ResponseEntity<Void> updateRule(@PathVariable java.util.UUID ruleId,
-            @RequestBody com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest request) {
+    public ResponseEntity<Void> updateRule(@PathVariable UUID ruleId,
+            @RequestBody UpdateRuleRequest request) {
         try {
             String conditionsJson = objectMapper.writeValueAsString(request.conditions());
             RuleNode root = ruleAstParser.parse(conditionsJson);
 
             manageRulesUseCase.updateRule(
-                    new com.fleet.domain.rule.vo.RuleId(ruleId),
+                    new RuleId(ruleId),
                     new TenantId(request.tenantId()),
                     new ServiceId(request.serviceId()),
                     request.eventType(),
@@ -61,8 +65,8 @@ public class RuleController {
     }
 
     @DeleteMapping("/{ruleId}")
-    public ResponseEntity<Void> deleteRule(@PathVariable java.util.UUID ruleId, @RequestParam java.util.UUID tenantId) {
-        manageRulesUseCase.deleteRule(new com.fleet.domain.rule.vo.RuleId(ruleId), new TenantId(tenantId));
+    public ResponseEntity<Void> deleteRule(@PathVariable UUID ruleId, @RequestParam UUID tenantId) {
+        manageRulesUseCase.deleteRule(new RuleId(ruleId), new TenantId(tenantId));
         return ResponseEntity.ok().build();
     }
 }
