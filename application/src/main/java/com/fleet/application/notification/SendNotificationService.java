@@ -5,6 +5,7 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.notification.model.NotificationLog;
 import com.fleet.domain.notification.model.NotificationRequest;
 import com.fleet.domain.notification.model.NotificationResult;
+import com.fleet.domain.notification.port.out.DeadLetterQueuePort;
 import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
 import com.fleet.domain.notification.port.out.NotificationLogRepositoryPort;
 import com.fleet.domain.notification.port.out.TemplateRenderPort;
@@ -35,6 +36,7 @@ public class SendNotificationService implements SendNotificationUseCase {
     private final NotificationDispatcherPort dispatcher;
     private final TemplateRenderPort templateRenderer;
     private final NotificationLogRepositoryPort logRepository;
+    private final DeadLetterQueuePort deadLetterQueue;
 
     @Override
     public NotificationResult send(NotificationRequest request) {
@@ -51,22 +53,42 @@ public class SendNotificationService implements SendNotificationUseCase {
         logRepository.save(notifLog);
 
         // Step 3 + 4: Dispatch and update log
-        try {
-            dispatch(request.channel(), request.recipient(), content);
-            NotificationLog sentLog = notifLog.markSent();
-            logRepository.update(sentLog);
-
-            log.info("Notification {} dispatched via {} to {}",
-                    notifLog.getId(), request.channel(), request.recipient());
-            return NotificationResult.sent(notifLog.getId(), request.channel(), request.recipient());
-
-        } catch (Exception ex) {
-            log.error("Failed to dispatch notification {} via {} to {}: {}",
-                    notifLog.getId(), request.channel(), request.recipient(), ex.getMessage());
-            NotificationLog failedLog = notifLog.markFailed(ex.getMessage());
-            logRepository.update(failedLog);
-            return NotificationResult.failed(notifLog.getId(), request.channel(), request.recipient(), ex.getMessage());
+        int maxAttempts = 3;
+        long backoffDelay = 1000;
+        
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                dispatch(request.channel(), request.recipient(), content);
+                NotificationLog sentLog = notifLog.markSent();
+                logRepository.update(sentLog);
+                return NotificationResult.sent(notifLog.getId(), request.channel(), request.recipient());
+            } catch (Exception ex) {
+                if (attempt == maxAttempts) {
+                    log.error("Failed to dispatch notification {} via {} to {} after {} attempts: {}",
+                            notifLog.getId(), request.channel(), request.recipient(), attempt, ex.getMessage());
+                    NotificationLog failedLog = notifLog.markFailed(ex.getMessage());
+                    logRepository.update(failedLog);
+                    
+                    // Push to Dead-Letter Queue for final failure handling (alarms, manual replay, etc)
+                    deadLetterQueue.enqueue(notifLog.getId(), ex.getMessage());
+                    
+                    return NotificationResult.failed(notifLog.getId(), request.channel(), request.recipient(), ex.getMessage());
+                } else {
+                    log.warn("Attempt {}/{} failed for notification {}, retrying in {}ms: {}",
+                            attempt, maxAttempts, notifLog.getId(), backoffDelay, ex.getMessage());
+                    try {
+                        Thread.sleep(backoffDelay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        log.error("Retry interrupted for notification {}", notifLog.getId());
+                    }
+                    backoffDelay *= 2; // Exponential backoff
+                }
+            }
         }
+        
+        // This should never be reached if maxAttempts >= 1
+        return NotificationResult.failed(notifLog.getId(), request.channel(), request.recipient(), "Unknown error");
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.fleet.domain.notification.model.NotificationAction.ChannelType;
 import com.fleet.domain.notification.model.NotificationLog;
 import com.fleet.domain.notification.model.NotificationRequest;
 import com.fleet.domain.notification.model.NotificationResult;
+import com.fleet.domain.notification.port.out.DeadLetterQueuePort;
 import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
 import com.fleet.domain.notification.port.out.NotificationLogRepositoryPort;
 import com.fleet.domain.notification.port.out.TemplateRenderPort;
@@ -32,6 +33,7 @@ class SendNotificationServiceTest {
     @Mock private NotificationDispatcherPort dispatcher;
     @Mock private TemplateRenderPort templateRenderer;
     @Mock private NotificationLogRepositoryPort logRepository;
+    @Mock private DeadLetterQueuePort deadLetterQueue;
 
     @InjectMocks
     private SendNotificationService service;
@@ -85,22 +87,28 @@ class SendNotificationServiceTest {
 
     @Test
     void shouldReturnFailedResultWhenDispatcherThrows() {
-        doThrow(new RuntimeException("SMTP connection refused"))
+        doThrow(new RuntimeException("Network timeout"))
                 .when(dispatcher).sendEmail(any(), any(), any());
 
         NotificationRequest request = new NotificationRequest(
                 tenantId, serviceId,
-                ChannelType.EMAIL, "error@fleet.com",
-                null, "Alert message",
+                ChannelType.EMAIL, "user@example.com",
+                null, "Hello Bob",
                 Locale.ENGLISH, Map.of());
 
-        NotificationResult result = service.send(request);
+        NotificationResult failedResult = service.send(request);
 
-        assertEquals(DeliveryStatus.FAILED, result.status());
-        assertTrue(result.failReason().contains("SMTP connection refused"));
+        // Should attempt dispatch 3 times (due to retry loop) but catch exception
+        verify(dispatcher, times(3)).sendEmail(eq("user@example.com"), eq("Fleet Notification"), eq("Hello Bob"));
 
-        // Verify log was saved then updated to FAILED
-        verify(logRepository).save(any());
+        // Status should be marked FAILED
+        assertEquals(DeliveryStatus.FAILED, failedResult.status());
+        assertEquals("Network timeout", failedResult.failReason());
+
+        // Should push to Dead Letter Queue
+        verify(deadLetterQueue).enqueue(any(), eq("Network timeout"));
+        
+        // Log should be updated to FAILED
         verify(logRepository).update(argThat(log -> log.getStatus() == DeliveryStatus.FAILED));
     }
 

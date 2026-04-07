@@ -1,14 +1,18 @@
 package com.fleet.infrastructure.config;
 
 import com.fleet.application.notification.DispatchAlertService;
+import com.fleet.application.notification.ManageTemplateService;
 import com.fleet.application.notification.SendNotificationService;
 import com.fleet.application.notification.usecase.DispatchAlertUseCase;
+import com.fleet.application.notification.usecase.ManageTemplateUseCase;
 import com.fleet.application.notification.usecase.SendNotificationUseCase;
+import com.fleet.domain.notification.port.out.DeadLetterQueuePort;
 import com.fleet.domain.notification.port.out.NotificationActionRepositoryPort;
 import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
 import com.fleet.domain.notification.port.out.NotificationLogRepositoryPort;
 import com.fleet.domain.notification.port.out.SubscriptionCheckPort;
 import com.fleet.domain.notification.port.out.TemplateRenderPort;
+import com.fleet.domain.notification.port.out.TemplateRepositoryPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -38,7 +42,13 @@ public class NotificationConfig {
     public SendNotificationUseCase sendNotificationUseCase(
             NotificationDispatcherPort dispatcherPort,
             TemplateRenderPort templateRenderer,
-            NotificationLogRepositoryPort logRepository) {
-        return new SendNotificationService(dispatcherPort, templateRenderer, logRepository);
+            NotificationLogRepositoryPort logRepository,
+            DeadLetterQueuePort deadLetterQueue) {
+        return new SendNotificationService(dispatcherPort, templateRenderer, logRepository, deadLetterQueue);
+    }
+
+    @Bean
+    public ManageTemplateUseCase manageTemplateUseCase(TemplateRepositoryPort templateRepositoryPort) {
+        return new ManageTemplateService(templateRepositoryPort);
     }
 }

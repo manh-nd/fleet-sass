@@ -2,43 +2,86 @@ spring:
   application:
     name: fleet-notification-hub
 
-  # PostgreSQL datasource — credentials sourced from environment variables with local dev defaults
+  # ── PostgreSQL datasource ──────────────────────────────────────────────────
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/fleet_db}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:rootpassword}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
 
-  # Liquibase schema migrations — auto-runs on startup
+  # ── Liquibase schema migrations ────────────────────────────────────────────
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
 
-  # Redis connection
+  # ── Redis ─────────────────────────────────────────────────────────────────
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-  # Keycloak JWT resource server
+  # ── Spring Cache (Redis-backed) ────────────────────────────────────────────
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000          # 5 minutes TTL for API key cache entries
+
+  # ── Keycloak JWT resource server ───────────────────────────────────────────
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/fleet}
 
-# Fleet custom configuration
+# ── Fleet custom properties ────────────────────────────────────────────────
 fleet:
-  # Security — set to false for local dev without Keycloak
   security:
     enabled: ${FLEET_SECURITY_ENABLED:true}
-
-  # Push notification
   push:
     fcm:
       enabled: ${FLEET_FCM_ENABLED:false}
 
+# ── Actuator endpoints ─────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose health, info, and metrics only — NOT env/beans/configprops in prod
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized   # Full details only for authenticated users
+      probes:
+        enabled: true                 # Kubernetes liveness/readiness probes
+  info:
+    env:
+      enabled: true
+
+# ── Application info (appears in /actuator/info) ───────────────────────────
+info:
+  app:
+    name: Fleet Notification Hub
+    version: "3.0.0"
+    description: Centralized notification hub for fleet management services
+
+# ── OpenAPI / Swagger UI ───────────────────────────────────────────────────
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: false
+
+# ── Logging ───────────────────────────────────────────────────────────────
 logging:
   level:
     com.fleet: DEBUG
     org.springframework.security: INFO
+    org.liquibase: INFO

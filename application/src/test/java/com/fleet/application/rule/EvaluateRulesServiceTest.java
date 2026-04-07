@@ -15,6 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import com.fleet.application.entitlement.usecase.CheckEntitlementUseCase;
 
 import java.util.List;
 import java.util.Map;
@@ -25,11 +28,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class EvaluateRulesServiceTest {
 
     @Mock private RuleRepositoryPort ruleRepository;
     @Mock private CooldownPort cooldownPort;
     @Mock private RuleEventPublisherPort eventPublisher;
+    @Mock private CheckEntitlementUseCase checkEntitlementUseCase;
 
     @InjectMocks
     private EvaluateRulesService service;
@@ -44,11 +49,32 @@ class EvaluateRulesServiceTest {
                 ruleId, tenantId, new ServiceId("S1"), "SPEEDING", mock(RuleNode.class), true, 5);
 
         when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
+        when(checkEntitlementUseCase.check(tenantId, new ServiceId("S1"))).thenReturn(true);
         when(cooldownPort.isOnCooldown(ruleId, "ref-1")).thenReturn(true);
 
         List<NotificationRule> result = service.evaluate(tenantId, "SPEEDING", payload);
 
         assertTrue(result.isEmpty());
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void shouldSkipWhenNotEntitled() {
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        EventPayload payload = new EventPayload("ref-1", Map.of());
+
+        NotificationRule rule = NotificationRule.reconstitute(
+                ruleId, tenantId, new ServiceId("S1"), "SPEEDING", mock(RuleNode.class), true, 5);
+
+        when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
+        // Entitlement fails -> skip the rule completely
+        when(checkEntitlementUseCase.check(tenantId, new ServiceId("S1"))).thenReturn(false);
+
+        List<NotificationRule> result = service.evaluate(tenantId, "SPEEDING", payload);
+
+        assertTrue(result.isEmpty());
+        verify(cooldownPort, never()).isOnCooldown(any(), any());
         verify(eventPublisher, never()).publish(any());
     }
 
@@ -63,6 +89,7 @@ class EvaluateRulesServiceTest {
                 ruleId, tenantId, new ServiceId("S1"), "SPEEDING", node, true, 5);
 
         when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
+        when(checkEntitlementUseCase.check(tenantId, new ServiceId("S1"))).thenReturn(true);
         when(cooldownPort.isOnCooldown(ruleId, "ref-1")).thenReturn(false);
         when(node.evaluate(payload)).thenReturn(true);
         when(cooldownPort.tryAcquireCooldown(ruleId, "ref-1", 5)).thenReturn(true);
@@ -84,6 +111,7 @@ class EvaluateRulesServiceTest {
                 ruleId, tenantId, new ServiceId("S1"), "SPEEDING", node, true, 5);
 
         when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
+        when(checkEntitlementUseCase.check(tenantId, new ServiceId("S1"))).thenReturn(true);
         when(cooldownPort.isOnCooldown(ruleId, "ref-1")).thenReturn(false);
         when(node.evaluate(payload)).thenReturn(true);
         // Atomic acquisition fails — another instance already claimed this cooldown

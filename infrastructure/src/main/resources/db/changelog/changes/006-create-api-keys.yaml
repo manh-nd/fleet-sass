@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-api-keys
+      author: fleet-team
+      comment: "Creates the api_keys table for service-to-service API key authentication."
+      changes:
+        - createTable:
+            tableName: api_keys
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: key_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+                    unique: true
+                  comment: "SHA-256 hex digest of the plaintext API key"
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  comment: "NULL means the key does not expire"
+
+        - createIndex:
+            tableName: api_keys
+            indexName: idx_api_keys_hash
+            columns:
+              - column:
+                  name: key_hash
+            unique: true
+            comment: "Primary lookup path — used on every authenticated request"
+
+        - createIndex:
+            tableName: api_keys
+            indexName: idx_api_keys_tenant
+            columns:
+              - column:
+                  name: tenant_id

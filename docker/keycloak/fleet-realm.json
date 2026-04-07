@@ -1,0 +1,39 @@
+{
+  "realm": "fleet",
+  "enabled": true,
+  "displayName": "Fleet Notification Hub",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "fleet-admin",   "description": "Platform administrator — full access" },
+      { "name": "fleet-service", "description": "Consuming service — notification send + rule read" },
+      { "name": "fleet-viewer",  "description": "Read-only access to notification history" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fleet-notification-hub",
+      "name": "Fleet Notification Hub",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KEYCLOAK_CLIENT_SECRET:fleet-secret-change-in-prod}",
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-dev",
+      "enabled": true,
+      "email": "svc@fleet.io",
+      "credentials": [
+        { "type": "password", "value": "devPassword123", "temporary": false }
+      ],
+      "realmRoles": [ "fleet-service" ]
+    }
+  ]
+}

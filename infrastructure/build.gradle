@@ -14,20 +14,35 @@ dependencies {
     // Configuration processor
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+    // Security & Web
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Resilience (Implementation uses custom backoff loop, zero dependencies)
+
     // Persistence
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 
     // Cache / Cooldown
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-    // Bean Validation
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // Production readiness — metrics, health, info
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    // JWT resource server (Keycloak integration)
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    // OpenAPI / Swagger UI — auto-generates documentation from controller annotations
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+
+    // Rate limiting — token bucket algorithm with Redis backend
+    implementation 'com.bucket4j:bucket4j-core:8.10.1'
+    implementation 'com.bucket4j:bucket4j-redis:8.10.1'
 
     // PostgreSQL JDBC driver (runtime only)
     runtimeOnly 'org.postgresql:postgresql'
+
+    // Structured JSON logging for production (ELK / Grafana Loki)
+    // Only active when spring.profiles.active=prod via logback-spring.xml
+    runtimeOnly 'net.logstash.logback:logstash-logback-encoder:8.0'
 
     // Hot reload during local development
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

@@ -10,8 +10,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
+import com.fleet.application.entitlement.usecase.CheckEntitlementUseCase;
+import org.springframework.context.annotation.Primary;
+import org.mockito.Mockito;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -28,8 +34,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.springframework.context.annotation.Import;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @Testcontainers
+@ActiveProfiles("test")
 @Import(EvaluateRulesIntegrationTest.TestConfig.class)
 public class EvaluateRulesIntegrationTest {
 
@@ -68,7 +75,9 @@ public class EvaluateRulesIntegrationTest {
                 event_type VARCHAR(100) NOT NULL,
                 conditions_json JSONB NOT NULL,
                 cooldown_minutes INT DEFAULT 5,
-                is_active BOOLEAN DEFAULT TRUE
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """).update();
         jdbcClient.sql("""
@@ -77,6 +86,18 @@ public class EvaluateRulesIntegrationTest {
                 channel_type VARCHAR(20) NOT NULL,
                 recipient VARCHAR(255) NOT NULL,
                 message_template TEXT NOT NULL
+            )
+        """).update();
+        jdbcClient.sql("""
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id UUID PRIMARY KEY,
+                tenant_id UUID NOT NULL,
+                service_id VARCHAR(50) NOT NULL,
+                key_hash VARCHAR(64) NOT NULL UNIQUE,
+                description VARCHAR(255),
+                active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP
             )
         """).update();
         jdbcClient.sql("TRUNCATE TABLE notification_rules").update();
@@ -144,9 +165,30 @@ public class EvaluateRulesIntegrationTest {
 
     @TestConfiguration
     static class TestConfig {
+
+        /**
+         * Provides a simple in-memory cache manager so @Cacheable on PostgresApiKeyAdapter
+         * works without a real Redis CacheManager in tests.
+         */
+        @Bean
+        public CacheManager cacheManager() {
+            return new ConcurrentMapCacheManager("apiKeys");
+        }
+
+        @Bean
+        public tools.jackson.databind.ObjectMapper objectMapper() {
+            return new tools.jackson.databind.ObjectMapper();
+        }
+
         @Bean
         public TestEventListener testEventListener() {
             return new TestEventListener();
+        }
+
+        @Bean
+        @Primary
+        public CheckEntitlementUseCase checkEntitlementUseCase() {
+            return Mockito.mock(CheckEntitlementUseCase.class);
         }
     }
 

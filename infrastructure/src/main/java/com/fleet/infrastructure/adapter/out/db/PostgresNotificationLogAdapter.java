@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
@@ -51,7 +52,7 @@ public class PostgresNotificationLogAdapter implements NotificationLogRepository
                 .param("status",     log.getStatus().name())
                 .param("failReason", log.getFailReason())
                 .param("attempts",   log.getAttempts())
-                .param("createdAt",  log.getCreatedAt())
+                .param("createdAt",  Timestamp.from(log.getCreatedAt()))
                 .update();
     }
 
@@ -126,7 +127,8 @@ public class PostgresNotificationLogAdapter implements NotificationLogRepository
 
     private NotificationLog mapRow(ResultSet rs) throws SQLException {
         var status    = DeliveryStatus.valueOf(rs.getString("status"));
-        var createdAt = rs.getObject("created_at", Instant.class);
+        var createdAtTimestamp = rs.getTimestamp("created_at");
+        var createdAt = createdAtTimestamp != null ? createdAtTimestamp.toInstant() : null;
         return NotificationLog.reconstitute(
                 new NotificationId(rs.getObject("id", UUID.class)),
                 new TenantId(rs.getObject("tenant_id", UUID.class)),

@@ -1,0 +1,40 @@
+<configuration>
+    <!-- Include Spring Boot defaults so %clr and other converters are registered -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProfile name="!prod">
+        <!-- ─── Development: human-readable colored console ─── -->
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.fleet" level="DEBUG"/>
+    </springProfile>
+
+    <springProfile name="prod">
+        <!-- ─── Production: JSON structured logs for ELK / Loki ingestion ─── -->
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- Include MDC context fields as top-level JSON properties -->
+                <includeMdcKeyName>tenantId</includeMdcKeyName>
+                <includeMdcKeyName>serviceId</includeMdcKeyName>
+                <includeMdcKeyName>notificationId</includeMdcKeyName>
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <!-- Standard service metadata for log aggregation -->
+                <customFields>{"app":"fleet-notification-hub","env":"prod"}</customFields>
+                <fieldNames>
+                    <timestamp>@timestamp</timestamp>
+                    <version>[ignore]</version>
+                </fieldNames>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+        <!-- Reduce noise from infrastructure libraries in production -->
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.hibernate"                level="WARN"/>
+        <logger name="io.lettuce"                   level="WARN"/>
+        <logger name="com.zaxxer.hikari"            level="WARN"/>
+    </springProfile>
+</configuration>
