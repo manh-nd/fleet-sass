@@ -9,6 +9,11 @@ spring:
     password: ${DB_PASSWORD:rootpassword}
     driver-class-name: org.postgresql.Driver
 
+  # Liquibase schema migrations — auto-runs on startup
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+
   # Redis connection
   data:
     redis:

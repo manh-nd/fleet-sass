@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-notification-actions
+      author: fleet-team
+      comment: "Creates the notification_actions table storing per-rule delivery channel configurations."
+      changes:
+        - createTable:
+            tableName: notification_actions
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: rule_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_notification_actions_rule
+                    references: notification_rules(id)
+                    deleteCascade: true
+              - column:
+                  name: channel_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  comment: "EMAIL | SMS | WEBHOOK | PUSH"
+              - column:
+                  name: recipient
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+                  comment: "Email address, phone number, device token, or webhook URL"
+              - column:
+                  name: message_template
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createIndex:
+            tableName: notification_actions
+            indexName: idx_notification_actions_rule_id
+            columns:
+              - column:
+                  name: rule_id

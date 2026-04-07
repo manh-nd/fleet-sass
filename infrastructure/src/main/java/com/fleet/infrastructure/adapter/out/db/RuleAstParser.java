@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.fleet.application.rule.port.out.RuleConditionSerializer;
 import com.fleet.domain.rule.ast.ConditionNode;
+import com.fleet.domain.rule.ast.ConditionValue;
 import com.fleet.domain.rule.ast.LogicalNode;
 import com.fleet.domain.rule.ast.LogicalOperator;
 import com.fleet.domain.rule.ast.Operator;
@@ -19,20 +21,38 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * Parses a JSON representation of a rule AST into domain {@link RuleNode} objects,
- * and serializes domain nodes back to JSON for persistence.
+ * Infrastructure implementation of {@link RuleConditionSerializer}.
  *
- * <p>The {@code "type"} field in JSON ("CONDITION" / "LOGICAL") and the operator
- * symbol string are infrastructure concerns used for polymorphic (de)serialization.
- * They do not belong on domain objects — this class is the mapping boundary.</p>
+ * <p>Handles bidirectional mapping between the domain AST ({@link RuleNode}) and the
+ * JSON format stored in PostgreSQL JSONB columns.</p>
+ *
+ * <p>The {@code "type"} discriminator ("CONDITION" / "LOGICAL") and operator symbol strings
+ * are infrastructure concerns — they live here, not in the domain model.</p>
  */
 @Component
 @RequiredArgsConstructor
-public class RuleAstParser {
+public class RuleAstParser implements RuleConditionSerializer {
 
     private final ObjectMapper objectMapper;
 
-    // ---- Deserialization: JSON → Domain ----
+    // ---- RuleConditionSerializer implementation ----
+
+    @Override
+    public RuleNode deserialize(String raw) {
+        return parse(raw);
+    }
+
+    @Override
+    public String serialize(RuleNode node) {
+        if (node == null) return null;
+        try {
+            return objectMapper.writeValueAsString(buildJson(node));
+        } catch (Exception e) {
+            throw new RuleParsingException("Failed to serialize AST to JSON: " + e.getMessage(), e);
+        }
+    }
+
+    // ---- Public parse alias (used by RuleController and tests) ----
 
     /**
      * Parses a JSON string into a domain {@link RuleNode} tree.
@@ -40,9 +60,7 @@ public class RuleAstParser {
      * @throws RuleParsingException if the JSON is malformed or contains an unknown node type
      */
     public RuleNode parse(String jsonString) {
-        if (jsonString == null || jsonString.isBlank()) {
-            return null;
-        }
+        if (jsonString == null || jsonString.isBlank()) return null;
         try {
             JsonNode rootJson = objectMapper.readTree(jsonString);
             return buildNode(rootJson);
@@ -52,6 +70,8 @@ public class RuleAstParser {
             throw new RuleParsingException("Failed to parse conditions JSON into AST: " + e.getMessage(), e);
         }
     }
+
+    // ---- Deserialization: JSON → Domain ----
 
     private RuleNode buildNode(JsonNode jsonNode) {
         String type = jsonNode.get("type").asString();
@@ -65,47 +85,29 @@ public class RuleAstParser {
             return new LogicalNode(operator, children);
 
         } else if ("CONDITION".equals(type)) {
-            String field = jsonNode.get("field").asString();
+            String field    = jsonNode.get("field").asString();
             Operator operator = Operator.fromSymbol(jsonNode.get("operator").asString());
-            Object value = extractValue(jsonNode.get("value"));
-            return new ConditionNode(field, operator, value);
+            ConditionValue conditionValue = extractConditionValue(jsonNode.get("value"));
+            return new ConditionNode(field, operator, conditionValue);
         }
 
         throw new RuleParsingException("Unknown node type in conditions JSON: " + type);
     }
 
-    private Object extractValue(JsonNode valueNode) {
-        if (valueNode.isNumber()) return valueNode.numberValue();
-        if (valueNode.isBoolean()) return valueNode.booleanValue();
+    private ConditionValue extractConditionValue(JsonNode valueNode) {
+        if (valueNode.isNumber())  return ConditionValue.NumericValue.of(valueNode.numberValue());
+        if (valueNode.isBoolean()) return new ConditionValue.BooleanValue(valueNode.booleanValue());
         if (valueNode.isArray()) {
-            List<Object> list = new ArrayList<>();
+            List<ConditionValue> elements = new ArrayList<>();
             for (JsonNode element : valueNode) {
-                list.add(extractValue(element));
+                elements.add(extractConditionValue(element));
             }
-            return list;
+            return new ConditionValue.ListValue(elements);
         }
-        return valueNode.asString();
+        return new ConditionValue.StringValue(valueNode.asString());
     }
 
     // ---- Serialization: Domain → JSON ----
-
-    /**
-     * Serializes a {@link RuleNode} to the canonical JSON format used for DB storage.
-     * Handles the {@code type} discriminator and operator symbol mapping explicitly,
-     * keeping domain objects clean of persistence concerns.
-     *
-     * @throws RuleParsingException if the node type is unknown
-     */
-    public String serialize(RuleNode node) {
-        if (node == null) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(buildJson(node));
-        } catch (Exception e) {
-            throw new RuleParsingException("Failed to serialize AST to JSON: " + e.getMessage(), e);
-        }
-    }
 
     private ObjectNode buildJson(RuleNode node) {
         ObjectNode json = objectMapper.createObjectNode();
@@ -114,17 +116,8 @@ public class RuleAstParser {
             json.put("type", "CONDITION");
             json.put("field", c.getField());
             json.put("operator", c.getOperator().getSymbol());
-            Object val = c.getValue();
-            if (val instanceof Number n) {
-                json.put("value", n.doubleValue());
-            } else if (val instanceof Boolean b) {
-                json.put("value", b);
-            } else if (val instanceof List<?> list) {
-                ArrayNode arr = json.putArray("value");
-                for (Object item : list) arr.add(String.valueOf(item));
-            } else {
-                json.put("value", String.valueOf(val));
-            }
+            writeConditionValue(json, c.getValue());
+
         } else if (node instanceof LogicalNode l) {
             json.put("type", "LOGICAL");
             json.put("operator", l.getOperator().name());
@@ -137,5 +130,25 @@ public class RuleAstParser {
         }
 
         return json;
+    }
+
+    private void writeConditionValue(ObjectNode json, ConditionValue value) {
+        switch (value) {
+            case ConditionValue.NumericValue n  -> json.put("value", n.number());
+            case ConditionValue.BooleanValue b  -> json.put("value", b.flag());
+            case ConditionValue.StringValue s   -> json.put("value", s.text());
+            case ConditionValue.ListValue lv -> {
+                ArrayNode arr = json.putArray("value");
+                for (ConditionValue element : lv.elements()) {
+                    switch (element) {
+                        case ConditionValue.NumericValue n -> arr.add(n.number());
+                        case ConditionValue.BooleanValue b -> arr.add(b.flag());
+                        case ConditionValue.StringValue s  -> arr.add(s.text());
+                        case ConditionValue.ListValue ignored ->
+                                throw new RuleParsingException("Nested lists are not supported in condition values");
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-email-subscriptions
+      author: fleet-team
+      comment: "Creates the email_subscriptions table for GDPR opt-in/opt-out management."
+      changes:
+        - createTable:
+            tableName: email_subscriptions
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email_address
+                  type: VARCHAR(320)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rule_id
+                  type: UUID
+                  constraints:
+                    nullable: true
+                  comment: "NULL means global setting; non-null means rule-specific override"
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  comment: "SUBSCRIBED | UNSUBSCRIBED | PENDING (double opt-in not yet confirmed)"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createIndex:
+            tableName: email_subscriptions
+            indexName: idx_email_subscriptions_email_rule
+            columns:
+              - column:
+                  name: email_address
+              - column:
+                  name: rule_id
+            comment: "Supports lookup by email + rule_id; rule_id NULLS LAST ordering handled at query level"

@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-notification-rules
+      author: fleet-team
+      comment: "Creates the notification_rules table with full schema including updated_at audit column."
+      changes:
+        - createTable:
+            tableName: notification_rules
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_id
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: conditions_json
+                  type: JSONB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cooldown_minutes
+                  type: INT
+                  defaultValueNumeric: 5
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createIndex:
+            tableName: notification_rules
+            indexName: idx_rules_tenant_event
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: event_type
+
+        - createIndex:
+            tableName: notification_rules
+            indexName: idx_rules_tenant_id_cursor
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: id
+            comment: "Composite index supporting cursor-based pagination (WHERE tenant_id = ? AND id > ? ORDER BY id)"

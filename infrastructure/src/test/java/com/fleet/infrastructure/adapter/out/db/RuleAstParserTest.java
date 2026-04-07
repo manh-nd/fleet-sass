@@ -2,10 +2,12 @@ package com.fleet.infrastructure.adapter.out.db;
 
 import tools.jackson.databind.ObjectMapper;
 import com.fleet.domain.rule.ast.ConditionNode;
+import com.fleet.domain.rule.ast.ConditionValue;
 import com.fleet.domain.rule.ast.LogicalNode;
 import com.fleet.domain.rule.ast.LogicalOperator;
 import com.fleet.domain.rule.ast.Operator;
 import com.fleet.domain.rule.ast.RuleNode;
+import com.fleet.domain.shared.exception.RuleParsingException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,31 +20,43 @@ class RuleAstParserTest {
     private final RuleAstParser parser = new RuleAstParser(objectMapper);
 
     @Test
-    void shouldParseConditionNode() {
+    void shouldParseNumericConditionNode() {
         String json = "{\"type\":\"CONDITION\",\"field\":\"speed\",\"operator\":\">\",\"value\":80}";
         RuleNode node = parser.parse(json);
 
         assertInstanceOf(ConditionNode.class, node);
-        ConditionNode conditionNode = (ConditionNode) node;
-        assertEquals("speed", conditionNode.getField());
-        assertEquals(Operator.GT, conditionNode.getOperator());
-        assertEquals(80, ((Number) conditionNode.getValue()).intValue());
+        ConditionNode cond = (ConditionNode) node;
+        assertEquals("speed", cond.getField());
+        assertEquals(Operator.GT, cond.getOperator());
+        assertInstanceOf(ConditionValue.NumericValue.class, cond.getValue());
+        assertEquals(80.0, ((ConditionValue.NumericValue) cond.getValue()).number());
+    }
+
+    @Test
+    void shouldParseBooleanConditionNode() {
+        String json = "{\"type\":\"CONDITION\",\"field\":\"cruise_control\",\"operator\":\"==\",\"value\":false}";
+        RuleNode node = parser.parse(json);
+
+        assertInstanceOf(ConditionNode.class, node);
+        ConditionNode cond = (ConditionNode) node;
+        assertInstanceOf(ConditionValue.BooleanValue.class, cond.getValue());
+        assertFalse(((ConditionValue.BooleanValue) cond.getValue()).flag());
     }
 
     @Test
     void shouldParseConditionNodeWithInOperator() {
-        String json = "{\"type\":\"CONDITION\",\"field\":\"status\",\"operator\":\"IN\",\"value\":[\"ONLINE\", \"IDLE\"]}";
+        String json = "{\"type\":\"CONDITION\",\"field\":\"status\",\"operator\":\"IN\",\"value\":[\"ONLINE\",\"IDLE\"]}";
         RuleNode node = parser.parse(json);
 
         assertInstanceOf(ConditionNode.class, node);
-        ConditionNode conditionNode = (ConditionNode) node;
-        assertEquals("status", conditionNode.getField());
-        assertEquals(Operator.IN, conditionNode.getOperator());
-        assertInstanceOf(List.class, conditionNode.getValue());
-        List<?> values = (List<?>) conditionNode.getValue();
-        assertEquals(2, values.size());
-        assertTrue(values.contains("ONLINE"));
-        assertTrue(values.contains("IDLE"));
+        ConditionNode cond = (ConditionNode) node;
+        assertEquals(Operator.IN, cond.getOperator());
+        assertInstanceOf(ConditionValue.ListValue.class, cond.getValue());
+
+        ConditionValue.ListValue listVal = (ConditionValue.ListValue) cond.getValue();
+        assertEquals(2, listVal.elements().size());
+        assertTrue(listVal.contains("ONLINE"));
+        assertTrue(listVal.contains("IDLE"));
     }
 
     @Test
@@ -60,15 +74,15 @@ class RuleAstParserTest {
         RuleNode node = parser.parse(json);
 
         assertInstanceOf(LogicalNode.class, node);
-        LogicalNode logicalNode = (LogicalNode) node;
-        assertEquals(LogicalOperator.AND, logicalNode.getOperator());
-        assertEquals(2, logicalNode.getChildren().size());
+        LogicalNode logical = (LogicalNode) node;
+        assertEquals(LogicalOperator.AND, logical.getOperator());
+        assertEquals(2, logical.getChildren().size());
     }
 
     @Test
-    void shouldThrowForUnknownNodeType() {
+    void shouldThrowRuleParsingExceptionForUnknownNodeType() {
         String json = "{\"type\":\"UNKNOWN\",\"field\":\"speed\",\"operator\":\">\",\"value\":80}";
-        assertThrows(RuntimeException.class, () -> parser.parse(json));
+        assertThrows(RuleParsingException.class, () -> parser.parse(json));
     }
 
     @Test
@@ -86,25 +100,49 @@ class RuleAstParserTest {
         assertNotNull(json);
         assertTrue(json.contains("\"type\":\"CONDITION\""), "type discriminator must be present");
         assertTrue(json.contains("\"field\":\"speed\""));
-        assertTrue(json.contains("\"operator\":\">\""), "operator should be serialized as symbol, not enum name");
+        assertTrue(json.contains("\"operator\":\">\""), "operator should be serialized as symbol");
         assertTrue(json.contains("\"value\":80"));
     }
 
     @Test
-    void shouldRoundTripConditionNodeThroughSerializeAndParse() {
+    void shouldRoundTripNumericConditionNode() {
         ConditionNode original = new ConditionNode("speed", Operator.GTE, 60);
         String json = parser.serialize(original);
         RuleNode reparsed = parser.parse(json);
 
         assertInstanceOf(ConditionNode.class, reparsed);
-        ConditionNode reparsedCondition = (ConditionNode) reparsed;
-        assertEquals(Operator.GTE, reparsedCondition.getOperator());
-        assertEquals("speed", reparsedCondition.getField());
-        assertEquals(60.0, ((Number) reparsedCondition.getValue()).doubleValue());
+        ConditionNode reparsedCond = (ConditionNode) reparsed;
+        assertEquals(Operator.GTE, reparsedCond.getOperator());
+        assertEquals("speed", reparsedCond.getField());
+        assertInstanceOf(ConditionValue.NumericValue.class, reparsedCond.getValue());
+        assertEquals(60.0, ((ConditionValue.NumericValue) reparsedCond.getValue()).number());
+    }
+
+    @Test
+    void shouldRoundTripListConditionNode() {
+        ConditionNode original = new ConditionNode("status", Operator.IN, List.of("A", "B", "C"));
+        String json = parser.serialize(original);
+        RuleNode reparsed = parser.parse(json);
+
+        assertInstanceOf(ConditionNode.class, reparsed);
+        ConditionNode reparsedCond = (ConditionNode) reparsed;
+        assertInstanceOf(ConditionValue.ListValue.class, reparsedCond.getValue());
+        ConditionValue.ListValue lv = (ConditionValue.ListValue) reparsedCond.getValue();
+        assertEquals(3, lv.elements().size());
+        assertTrue(lv.contains("A"));
+        assertTrue(lv.contains("C"));
     }
 
     @Test
     void shouldReturnNullForNullNode() {
         assertNull(parser.serialize(null));
+    }
+
+    @Test
+    void shouldImplementRuleConditionSerializerViaDeserialize() {
+        // Verify the port interface is correctly implemented
+        String json = "{\"type\":\"CONDITION\",\"field\":\"temperature\",\"operator\":\">\",\"value\":37.5}";
+        RuleNode node = parser.deserialize(json);
+        assertInstanceOf(ConditionNode.class, node);
     }
 }

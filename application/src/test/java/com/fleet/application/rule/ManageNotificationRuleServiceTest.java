@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ManageNotificationRuleServiceTest {
@@ -79,5 +79,18 @@ class ManageNotificationRuleServiceTest {
         service.deleteRule(ruleId, tenantId);
 
         verify(ruleRepository).delete(ruleId, tenantId);
+    }
+
+    @Test
+    void shouldListRulesWithCursorPagination() {
+        TenantId tenantId = new TenantId(UUID.randomUUID());
+        var emptyPage = com.fleet.domain.shared.pagination.CursorPage.<com.fleet.domain.rule.model.NotificationRule>lastPage(java.util.List.of());
+        doReturn(emptyPage).when(ruleRepository).findAllByTenant(tenantId, null, 20);
+
+        var page = service.listRules(tenantId, null, 20);
+
+        assertNotNull(page);
+        assertFalse(page.hasMore());
+        verify(ruleRepository).findAllByTenant(tenantId, null, 20);
     }
 }

@@ -3,6 +3,6 @@ plugins {
 }
 
 dependencies {
-    // Application phụ thuộc vào Domain
+    // Application layer depends on the domain module
     api project(':domain') 
 }

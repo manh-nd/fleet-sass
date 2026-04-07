@@ -7,9 +7,8 @@ import com.fleet.domain.rule.ast.RuleNode;
 import com.fleet.domain.rule.model.NotificationRule;
 import com.fleet.domain.rule.port.out.RuleRepositoryPort;
 import com.fleet.domain.rule.vo.RuleId;
+import com.fleet.domain.shared.pagination.CursorPage;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
 
 /**
  * Service implementation for managing notification rule lifecycle.
@@ -42,7 +41,7 @@ public class ManageNotificationRuleService implements ManageNotificationRuleUseC
     }
 
     @Override
-    public List<NotificationRule> listRules(TenantId tenantId) {
-        return ruleRepository.findAllByTenant(tenantId);
+    public CursorPage<NotificationRule> listRules(TenantId tenantId, String cursor, int limit) {
+        return ruleRepository.findAllByTenant(tenantId, cursor, limit);
     }
 }

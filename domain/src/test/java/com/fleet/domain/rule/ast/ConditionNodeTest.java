@@ -93,10 +93,10 @@ class ConditionNodeTest {
     @Test
     void shouldThrowIllegalArgumentWhenComparingNonNumericValues() {
         ConditionNode node = new ConditionNode("status", Operator.GT, 80);
-        EventPayload payload = new EventPayload("v1", Map.of("status", "not-a-number"));
+        EventPayload payload = new EventPayload("ref-1", Map.of("status", "not-a-number"));
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> node.evaluate(payload));
-        assertTrue(ex.getMessage().contains("Cannot compare non-numeric values"));
+        assertTrue(ex.getMessage().contains("Cannot compare non-numeric"), "Should mention non-numeric comparison: " + ex.getMessage());
     }
 
     @Test

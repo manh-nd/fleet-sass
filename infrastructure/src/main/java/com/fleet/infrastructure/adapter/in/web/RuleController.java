@@ -1,11 +1,13 @@
 package com.fleet.infrastructure.adapter.in.web;
 
 import tools.jackson.databind.ObjectMapper;
+import com.fleet.application.rule.port.out.RuleConditionSerializer;
 import com.fleet.application.rule.usecase.ManageNotificationRuleUseCase;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.RuleNode;
 import com.fleet.domain.rule.vo.RuleId;
+import com.fleet.domain.shared.pagination.CursorPage;
 import com.fleet.infrastructure.adapter.in.web.dto.CreateRuleRequest;
 import com.fleet.infrastructure.adapter.in.web.dto.NotificationRuleResponse;
 import com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest;
@@ -15,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,22 +29,25 @@ import java.util.UUID;
 public class RuleController {
 
     private final ManageNotificationRuleUseCase manageRulesUseCase;
+    private final RuleConditionSerializer conditionSerializer;
     private final RuleAstParser ruleAstParser;
     private final ObjectMapper objectMapper;
 
     @GetMapping
-    public ResponseEntity<List<NotificationRuleResponse>> listRules(@RequestParam UUID tenantId) {
-        List<NotificationRuleResponse> rules = manageRulesUseCase.listRules(new TenantId(tenantId))
-                .stream()
-                .map(rule -> NotificationRuleResponse.from(rule, ruleAstParser, objectMapper))
-                .toList();
-        return ResponseEntity.ok(rules);
+    public ResponseEntity<CursorPage<NotificationRuleResponse>> listRules(
+            @RequestParam UUID tenantId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit) {
+        CursorPage<NotificationRuleResponse> page = manageRulesUseCase
+                .listRules(new TenantId(tenantId), cursor, limit)
+                .map(rule -> NotificationRuleResponse.from(rule, ruleAstParser, objectMapper));
+        return ResponseEntity.ok(page);
     }
 
     @PostMapping
     public ResponseEntity<Void> createRule(@Valid @RequestBody CreateRuleRequest request) {
         String conditionsJson = objectMapper.writeValueAsString(request.conditions());
-        RuleNode root = ruleAstParser.parse(conditionsJson);
+        RuleNode root = conditionSerializer.deserialize(conditionsJson);
         manageRulesUseCase.createRule(
                 new TenantId(request.tenantId()),
                 new ServiceId(request.serviceId()),
@@ -59,7 +63,7 @@ public class RuleController {
             @PathVariable UUID ruleId,
             @Valid @RequestBody UpdateRuleRequest request) {
         String conditionsJson = objectMapper.writeValueAsString(request.conditions());
-        RuleNode root = ruleAstParser.parse(conditionsJson);
+        RuleNode root = conditionSerializer.deserialize(conditionsJson);
         manageRulesUseCase.updateRule(
                 new RuleId(ruleId),
                 new TenantId(request.tenantId()),
