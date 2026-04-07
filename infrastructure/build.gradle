@@ -23,6 +23,9 @@ dependencies {
     // Bean Validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // JWT resource server (Keycloak integration)
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
     // PostgreSQL JDBC driver (runtime only)
     runtimeOnly 'org.postgresql:postgresql'
 

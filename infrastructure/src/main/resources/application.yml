@@ -1,6 +1,6 @@
 spring:
   application:
-    name: fleet-saas
+    name: fleet-notification-hub
 
   # PostgreSQL datasource — credentials sourced from environment variables with local dev defaults
   datasource:
@@ -20,6 +20,25 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  # Keycloak JWT resource server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/fleet}
+
+# Fleet custom configuration
+fleet:
+  # Security — set to false for local dev without Keycloak
+  security:
+    enabled: ${FLEET_SECURITY_ENABLED:true}
+
+  # Push notification
+  push:
+    fcm:
+      enabled: ${FLEET_FCM_ENABLED:false}
+
 logging:
   level:
     com.fleet: DEBUG
+    org.springframework.security: INFO

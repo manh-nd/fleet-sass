@@ -52,7 +52,9 @@ class PostgresRuleRepositoryAdapterTest {
                         event_type VARCHAR(100) NOT NULL,
                         conditions_json JSONB NOT NULL,
                         cooldown_minutes INT DEFAULT 5,
-                        is_active BOOLEAN DEFAULT TRUE
+                        is_active BOOLEAN DEFAULT TRUE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """).update();
 

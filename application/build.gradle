@@ -4,5 +4,9 @@ plugins {
 
 dependencies {
     // Application layer depends on the domain module
-    api project(':domain') 
+    api project(':domain')
+
+    // Structured logging — SLF4J API for @Slf4j in application services
+    // The runtime binding (Logback) is provided by the infrastructure module
+    implementation 'org.slf4j:slf4j-api'
 }

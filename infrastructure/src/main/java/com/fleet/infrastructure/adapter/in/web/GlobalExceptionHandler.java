@@ -3,6 +3,7 @@ package com.fleet.infrastructure.adapter.in.web;
 import com.fleet.domain.shared.exception.InvalidRuleConditionException;
 import com.fleet.domain.shared.exception.RuleNotFoundException;
 import com.fleet.domain.shared.exception.RuleParsingException;
+import com.fleet.domain.shared.exception.TemplateNotFoundException;
 import com.fleet.infrastructure.adapter.in.web.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,16 @@ public class GlobalExceptionHandler {
         log.warn("Rule not found: {}", ex.getRuleId());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of("RULE_NOT_FOUND", ex.getMessage()));
+    }
+
+    /**
+     * 404 — template not found.
+     */
+    @ExceptionHandler(TemplateNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTemplateNotFound(TemplateNotFoundException ex) {
+        log.warn("Template not found: {}", ex.getTemplateId());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of("TEMPLATE_NOT_FOUND", ex.getMessage()));
     }
 
     /**

@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-notification-templates
+      author: fleet-team
+      comment: "Creates the notification_templates table for db-backed i18n template management."
+      changes:
+        - createTable:
+            tableName: notification_templates
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: template_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                  comment: "Logical ID shared across locales (e.g. SPEED_ALERT)"
+              - column:
+                  name: locale
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+                  comment: "BCP 47 locale tag (e.g. en, vi, fr)"
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  comment: "NULL means system-wide template; non-null is tenant-specific override"
+              - column:
+                  name: subject
+                  type: VARCHAR(255)
+                  comment: "Optional: used as email subject or push notification title"
+              - column:
+                  name: body
+                  type: TEXT
+                  constraints:
+                    nullable: false
+                  comment: "Template body with {{variable}} placeholders"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - addUniqueConstraint:
+            tableName: notification_templates
+            columnNames: template_id, locale, tenant_id
+            constraintName: uq_template_locale_tenant
+
+        - createIndex:
+            tableName: notification_templates
+            indexName: idx_templates_lookup
+            columns:
+              - column:
+                  name: template_id
+              - column:
+                  name: locale
+              - column:
+                  name: tenant_id
+            comment: "Fast lookup by templateId + locale + tenant (ordered: tenant-specific overrides first)"
