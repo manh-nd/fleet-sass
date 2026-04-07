@@ -13,4 +13,5 @@ public interface ManageNotificationRuleUseCase {
     void createRule(TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive);
     void updateRule(RuleId ruleId, TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive);
     void deleteRule(RuleId ruleId, TenantId tenantId);
+    java.util.List<com.fleet.domain.rule.model.NotificationRule> listRules(TenantId tenantId);
 }

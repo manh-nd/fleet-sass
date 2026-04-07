@@ -9,6 +9,7 @@ import com.fleet.domain.rule.port.out.RuleRepositoryPort;
 import com.fleet.domain.rule.vo.RuleId;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -52,5 +53,10 @@ public class ManageNotificationRuleService implements ManageNotificationRuleUseC
     @Override
     public void deleteRule(RuleId ruleId, TenantId tenantId) {
         ruleRepository.delete(ruleId, tenantId);
+    }
+
+    @Override
+    public List<NotificationRule> listRules(TenantId tenantId) {
+        return ruleRepository.findAllByTenant(tenantId);
     }
 }

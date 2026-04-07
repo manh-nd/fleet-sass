@@ -39,20 +39,35 @@ public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {
         return jdbcClient.sql(sql)
                 .param("tenantId", tenantId.value())
                 .param("eventType", eventType)
-                .query((rs, rowNum) -> {
-                    RuleId id = new RuleId(rs.getObject("id", UUID.class));
-                    TenantId tId = new TenantId(rs.getObject("tenant_id", UUID.class));
-                    ServiceId sId = new ServiceId(rs.getString("service_id"));
-                    String eType = rs.getString("event_type");
-                    boolean isActive = rs.getBoolean("is_active");
-                    String jsonbString = rs.getString("conditions_json");
-                    int cooldownMinutes = rs.getInt("cooldown_minutes");
-
-                    RuleNode rootCondition = astParser.parse(jsonbString);
-
-                    return new NotificationRule(id, tId, sId, eType, rootCondition, isActive, cooldownMinutes);
-                })
+                .query((rs, rowNum) -> mapRow(rs))
                 .list();
+    }
+
+    @Override
+    public List<NotificationRule> findAllByTenant(TenantId tenantId) {
+        String sql = """
+                SELECT id, tenant_id, service_id, event_type, conditions_json, cooldown_minutes, is_active
+                FROM notification_rules
+                WHERE tenant_id = :tenantId
+                ORDER BY id
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("tenantId", tenantId.value())
+                .query((rs, rowNum) -> mapRow(rs))
+                .list();
+    }
+
+    private NotificationRule mapRow(java.sql.ResultSet rs) throws java.sql.SQLException {
+        RuleId id = new RuleId(rs.getObject("id", UUID.class));
+        TenantId tId = new TenantId(rs.getObject("tenant_id", UUID.class));
+        ServiceId sId = new ServiceId(rs.getString("service_id"));
+        String eType = rs.getString("event_type");
+        boolean isActive = rs.getBoolean("is_active");
+        String jsonbString = rs.getString("conditions_json");
+        int cooldownMinutes = rs.getInt("cooldown_minutes");
+        RuleNode rootCondition = astParser.parse(jsonbString);
+        return new NotificationRule(id, tId, sId, eType, rootCondition, isActive, cooldownMinutes);
     }
 
     @Override

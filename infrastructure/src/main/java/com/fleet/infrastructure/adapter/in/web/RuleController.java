@@ -7,12 +7,14 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.RuleNode;
 import com.fleet.domain.rule.vo.RuleId;
 import com.fleet.infrastructure.adapter.in.web.dto.CreateRuleRequest;
+import com.fleet.infrastructure.adapter.in.web.dto.NotificationRuleResponse;
 import com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest;
 import com.fleet.infrastructure.adapter.out.db.RuleAstParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -27,6 +29,15 @@ public class RuleController {
     private final ManageNotificationRuleUseCase manageRulesUseCase;
     private final RuleAstParser ruleAstParser;
     private final ObjectMapper objectMapper; // Spring Boot autoconfigures a standard Jackson ObjectMapper
+
+    @GetMapping
+    public ResponseEntity<List<NotificationRuleResponse>> listRules(@RequestParam UUID tenantId) {
+        List<NotificationRuleResponse> rules = manageRulesUseCase.listRules(new TenantId(tenantId))
+                .stream()
+                .map(rule -> NotificationRuleResponse.from(rule, ruleAstParser, objectMapper))
+                .toList();
+        return ResponseEntity.ok(rules);
+    }
 
     @PostMapping
     public ResponseEntity<Void> createRule(@RequestBody CreateRuleRequest request) {

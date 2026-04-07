@@ -11,6 +11,8 @@ import com.fleet.domain.rule.vo.RuleId;
  */
 public interface RuleRepositoryPort {
     List<NotificationRule> findActiveRules(TenantId tenantId, String eventType);
+    /** Returns ALL rules (active and inactive) belonging to a tenant. Used for management UIs. */
+    List<NotificationRule> findAllByTenant(TenantId tenantId);
     void save(NotificationRule rule);
     void update(NotificationRule rule);
     void delete(RuleId ruleId, TenantId tenantId);
