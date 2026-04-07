@@ -5,19 +5,30 @@ plugins {
 dependencies {
     implementation project(':application')
 
+    // Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-  
+
+    // Configuration processor
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+    // Persistence
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
 
+    // Cache / Cooldown
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-redis-test'
-    
+
+    // Bean Validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // PostgreSQL JDBC driver (runtime only)
     runtimeOnly 'org.postgresql:postgresql'
 
+    // Hot reload during local development
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Integration tests — Testcontainers lives here only (not in root subprojects)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:testcontainers'
 }

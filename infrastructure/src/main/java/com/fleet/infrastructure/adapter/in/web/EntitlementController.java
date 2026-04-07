@@ -14,7 +14,7 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/entitlements")
+@RequestMapping("/api/v1/entitlements")
 @RequiredArgsConstructor
 public class EntitlementController {
 

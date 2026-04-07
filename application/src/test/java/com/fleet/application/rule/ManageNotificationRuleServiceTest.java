@@ -39,14 +39,14 @@ class ManageNotificationRuleServiceTest {
         ArgumentCaptor<NotificationRule> captor = ArgumentCaptor.forClass(NotificationRule.class);
         verify(ruleRepository).save(captor.capture());
 
-        NotificationRule savedRule = captor.getValue();
-        assertNotNull(savedRule.getId());
-        assertEquals(tenantId, savedRule.getTenantId());
-        assertEquals(serviceId, savedRule.getServiceId());
-        assertEquals("SPEEDING", savedRule.getEventType());
-        assertEquals(condition, savedRule.getConditionRoot());
-        assertEquals(10, savedRule.getCooldownMinutes());
-        assertTrue(savedRule.isActive());
+        NotificationRule saved = captor.getValue();
+        assertNotNull(saved.getId());
+        assertEquals(tenantId, saved.getTenantId());
+        assertEquals(serviceId, saved.getServiceId());
+        assertEquals("SPEEDING", saved.getEventType());
+        assertEquals(condition, saved.getConditionRoot());
+        assertEquals(10, saved.getCooldownMinutes());
+        assertTrue(saved.isActive());
     }
 
     @Test
@@ -61,14 +61,14 @@ class ManageNotificationRuleServiceTest {
         ArgumentCaptor<NotificationRule> captor = ArgumentCaptor.forClass(NotificationRule.class);
         verify(ruleRepository).update(captor.capture());
 
-        NotificationRule updatedRule = captor.getValue();
-        assertEquals(ruleId, updatedRule.getId());
-        assertEquals(tenantId, updatedRule.getTenantId());
-        assertEquals(serviceId, updatedRule.getServiceId());
-        assertEquals("SPEEDING_NEW", updatedRule.getEventType());
-        assertEquals(condition, updatedRule.getConditionRoot());
-        assertEquals(15, updatedRule.getCooldownMinutes());
-        assertFalse(updatedRule.isActive());
+        NotificationRule updated = captor.getValue();
+        assertEquals(ruleId, updated.getId());
+        assertEquals(tenantId, updated.getTenantId());
+        assertEquals(serviceId, updated.getServiceId());
+        assertEquals("SPEEDING_NEW", updated.getEventType());
+        assertEquals(condition, updated.getConditionRoot());
+        assertEquals(15, updated.getCooldownMinutes());
+        assertFalse(updated.isActive());
     }
 
     @Test

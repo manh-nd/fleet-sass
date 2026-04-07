@@ -1,8 +1,6 @@
 package com.fleet.infrastructure.adapter.out.db;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,7 +44,6 @@ class PostgresRuleRepositoryAdapterTest {
         astParser = mock(RuleAstParser.class);
         adapter = new PostgresRuleRepositoryAdapter(jdbcClient, astParser);
 
-        // Ensure table exists
         jdbcClient.sql("""
                     CREATE TABLE IF NOT EXISTS notification_rules (
                         id UUID PRIMARY KEY,
@@ -68,11 +65,10 @@ class PostgresRuleRepositoryAdapterTest {
         UUID tenantId = UUID.randomUUID();
         String eventType = "SPEEDING";
 
-        jdbcClient
-                .sql("""
-                            INSERT INTO notification_rules (id, tenant_id, service_id, event_type, conditions_json, cooldown_minutes, is_active)
-                            VALUES (?, ?, 'S1', ?, '{"type":"CONDITION"}'::jsonb, 5, true)
-                        """)
+        jdbcClient.sql("""
+                        INSERT INTO notification_rules (id, tenant_id, service_id, event_type, conditions_json, cooldown_minutes, is_active)
+                        VALUES (?, ?, 'S1', ?, '{"type":"CONDITION"}'::jsonb, 5, true)
+                    """)
                 .params(ruleId, tenantId, eventType)
                 .update();
 
@@ -99,9 +95,7 @@ class PostgresRuleRepositoryAdapterTest {
                 .params(ruleId, tenantId, eventType)
                 .update();
 
-        List<NotificationRule> result = adapter.findActiveRules(new TenantId(tenantId), eventType);
-
-        assertTrue(result.isEmpty());
+        assertTrue(adapter.findActiveRules(new TenantId(tenantId), eventType).isEmpty());
     }
 
     @Test
@@ -111,17 +105,14 @@ class PostgresRuleRepositoryAdapterTest {
         ServiceId serviceId = new ServiceId("S1");
         RuleNode mockNode = mock(RuleNode.class);
 
-        NotificationRule rule = new NotificationRule(
-            ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10
-        );
-
+        NotificationRule rule = NotificationRule.reconstitute(ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10);
         when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
 
         assertDoesNotThrow(() -> adapter.save(rule));
 
         when(astParser.parse(anyString())).thenReturn(mockNode);
         List<NotificationRule> rules = adapter.findActiveRules(tenantId, "SPEEDING");
-        
+
         assertEquals(1, rules.size());
         assertEquals(ruleId, rules.get(0).getId());
         assertEquals(10, rules.get(0).getCooldownMinutes());
@@ -131,45 +122,33 @@ class PostgresRuleRepositoryAdapterTest {
     void shouldUpdateRule() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         TenantId tenantId = new TenantId(UUID.randomUUID());
-        ServiceId serviceId = new ServiceId("S1");
         RuleNode mockNode = mock(RuleNode.class);
+        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
 
         // Initial save
-        NotificationRule rule = new NotificationRule(
-            ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10
-        );
-        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
-        adapter.save(rule);
+        adapter.save(NotificationRule.reconstitute(ruleId, tenantId, new ServiceId("S1"), "SPEEDING", mockNode, true, 10));
 
-        // Update
-        NotificationRule updateRule = new NotificationRule(
-            ruleId, tenantId, new ServiceId("S2"), "SPEEDING", mockNode, false, 15
-        );
-        when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
-        assertDoesNotThrow(() -> adapter.update(updateRule));
+        // Update to inactive
+        assertDoesNotThrow(() -> adapter.update(
+                NotificationRule.reconstitute(ruleId, tenantId, new ServiceId("S2"), "SPEEDING", mockNode, false, 15)));
 
-        // Verify it was updated (findActiveRules filters for is_active=true)
-        List<NotificationRule> rules = adapter.findActiveRules(tenantId, "SPEEDING");
-        assertTrue(rules.isEmpty(), "Rule should have been updated to inactive");
+        // findActiveRules filters is_active=true → should be empty
+        assertTrue(adapter.findActiveRules(tenantId, "SPEEDING").isEmpty(),
+                "Rule should have been updated to inactive");
     }
 
     @Test
     void shouldDeleteRule() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
         TenantId tenantId = new TenantId(UUID.randomUUID());
-        ServiceId serviceId = new ServiceId("S1");
         RuleNode mockNode = mock(RuleNode.class);
-
-        NotificationRule rule = new NotificationRule(
-            ruleId, tenantId, serviceId, "SPEEDING", mockNode, true, 10
-        );
         when(astParser.serialize(mockNode)).thenReturn("{\"type\":\"CONDITION\"}");
-        adapter.save(rule);
+
+        adapter.save(NotificationRule.reconstitute(ruleId, tenantId, new ServiceId("S1"), "SPEEDING", mockNode, true, 10));
 
         assertDoesNotThrow(() -> adapter.delete(ruleId, tenantId));
 
         when(astParser.parse(anyString())).thenReturn(mockNode);
-        List<NotificationRule> rules = adapter.findActiveRules(tenantId, "SPEEDING");
-        assertTrue(rules.isEmpty(), "Rule should have been deleted");
+        assertTrue(adapter.findActiveRules(tenantId, "SPEEDING").isEmpty(), "Rule should have been deleted");
     }
 }

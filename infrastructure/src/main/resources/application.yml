@@ -1,20 +1,20 @@
 spring:
   application:
     name: fleet-saas
-    
-  # Cấu hình DataSource kết nối tới Postgres trong Docker
+
+  # PostgreSQL datasource — credentials sourced from environment variables with local dev defaults
   datasource:
-    url: jdbc:postgresql://localhost:5432/fleet_db
-    username: root
-    password: rootpassword
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/fleet_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:rootpassword}
     driver-class-name: org.postgresql.Driver
-    
-  # Cấu hình Redis
+
+  # Redis connection
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 logging:
   level:
-    com.fleet: DEBUG # Hiện log để dễ debug lúc test
+    com.fleet: DEBUG

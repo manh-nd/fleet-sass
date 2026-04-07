@@ -10,11 +10,10 @@ import com.fleet.domain.rule.vo.RuleId;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
- * Service implementation for managing Notification Rules.
- * Handles the lifecycle (creation, update, deletion) of rules.
+ * Service implementation for managing notification rule lifecycle.
+ * Uses aggregate factory and mutation methods to enforce domain invariants.
  */
 @RequiredArgsConstructor
 public class ManageNotificationRuleService implements ManageNotificationRuleUseCase {
@@ -22,31 +21,18 @@ public class ManageNotificationRuleService implements ManageNotificationRuleUseC
     private final RuleRepositoryPort ruleRepository;
 
     @Override
-    public void createRule(TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive) {
-        RuleId ruleId = new RuleId(UUID.randomUUID());
-        NotificationRule rule = new NotificationRule(
-            ruleId, 
-            tenantId, 
-            serviceId, 
-            eventType, 
-            conditionRoot, 
-            isActive, 
-            cooldownMinutes
-        );
+    public void createRule(TenantId tenantId, ServiceId serviceId, String eventType,
+            RuleNode conditionRoot, int cooldownMinutes, boolean isActive) {
+        NotificationRule rule = NotificationRule.create(
+                tenantId, serviceId, eventType, conditionRoot, cooldownMinutes, isActive);
         ruleRepository.save(rule);
     }
 
     @Override
-    public void updateRule(RuleId ruleId, TenantId tenantId, ServiceId serviceId, String eventType, RuleNode conditionRoot, int cooldownMinutes, boolean isActive) {
-        NotificationRule rule = new NotificationRule(
-            ruleId, 
-            tenantId, 
-            serviceId, 
-            eventType, 
-            conditionRoot, 
-            isActive, 
-            cooldownMinutes
-        );
+    public void updateRule(RuleId ruleId, TenantId tenantId, ServiceId serviceId, String eventType,
+            RuleNode conditionRoot, int cooldownMinutes, boolean isActive) {
+        NotificationRule rule = NotificationRule.reconstitute(
+                ruleId, tenantId, serviceId, eventType, conditionRoot, isActive, cooldownMinutes);
         ruleRepository.update(rule);
     }
 

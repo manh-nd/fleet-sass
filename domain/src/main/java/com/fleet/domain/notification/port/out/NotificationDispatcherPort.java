@@ -11,4 +11,14 @@ public interface NotificationDispatcherPort {
 
     void sendWebhook(String url, String jsonPayload);
 
+    /**
+     * Sends a push notification to a device via FCM/APNs.
+     *
+     * @param deviceToken the FCM registration token or APNs device token
+     * @param title       the notification title
+     * @param body        the notification body
+     */
+    void sendPush(String deviceToken, String title, String body);
+
 }
+

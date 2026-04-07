@@ -27,12 +27,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EvaluateRulesServiceTest {
 
-    @Mock
-    private RuleRepositoryPort ruleRepository;
-    @Mock
-    private CooldownPort cooldownPort;
-    @Mock
-    private RuleEventPublisherPort eventPublisher;
+    @Mock private RuleRepositoryPort ruleRepository;
+    @Mock private CooldownPort cooldownPort;
+    @Mock private RuleEventPublisherPort eventPublisher;
 
     @InjectMocks
     private EvaluateRulesService service;
@@ -41,16 +38,16 @@ class EvaluateRulesServiceTest {
     void shouldSkipWhenOnCooldown() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of());
-        
-        NotificationRule rule = new NotificationRule(ruleId, tenantId, new ServiceId("S1"), 
-            "SPEEDING", mock(RuleNode.class), true, 5);
-        
+        EventPayload payload = new EventPayload("ref-1", Map.of());
+
+        NotificationRule rule = NotificationRule.reconstitute(
+                ruleId, tenantId, new ServiceId("S1"), "SPEEDING", mock(RuleNode.class), true, 5);
+
         when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
-        when(cooldownPort.isOnCooldown(ruleId, "V1")).thenReturn(true);
-        
+        when(cooldownPort.isOnCooldown(ruleId, "ref-1")).thenReturn(true);
+
         List<NotificationRule> result = service.evaluate(tenantId, "SPEEDING", payload);
-        
+
         assertTrue(result.isEmpty());
         verify(eventPublisher, never()).publish(any());
     }
@@ -59,19 +56,19 @@ class EvaluateRulesServiceTest {
     void shouldTriggerEventWhenRuleSatisfiedAndNotInCooldown() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
-        
+        EventPayload payload = new EventPayload("ref-1", Map.of("speed", 100));
+
         RuleNode node = mock(RuleNode.class);
-        NotificationRule rule = new NotificationRule(ruleId, tenantId, new ServiceId("S1"), 
-            "SPEEDING", node, true, 5);
-        
+        NotificationRule rule = NotificationRule.reconstitute(
+                ruleId, tenantId, new ServiceId("S1"), "SPEEDING", node, true, 5);
+
         when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
-        when(cooldownPort.isOnCooldown(ruleId, "V1")).thenReturn(false);
+        when(cooldownPort.isOnCooldown(ruleId, "ref-1")).thenReturn(false);
         when(node.evaluate(payload)).thenReturn(true);
-        when(cooldownPort.tryAcquireCooldown(ruleId, "V1", 5)).thenReturn(true);
-        
+        when(cooldownPort.tryAcquireCooldown(ruleId, "ref-1", 5)).thenReturn(true);
+
         List<NotificationRule> result = service.evaluate(tenantId, "SPEEDING", payload);
-        
+
         assertEquals(1, result.size());
         verify(eventPublisher).publish(any(RuleTriggeredEvent.class));
     }
@@ -80,20 +77,20 @@ class EvaluateRulesServiceTest {
     void shouldNotTriggerEventWhenSatisfiedButCooldownAcquisitionFails() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
-        
+        EventPayload payload = new EventPayload("ref-1", Map.of("speed", 100));
+
         RuleNode node = mock(RuleNode.class);
-        NotificationRule rule = new NotificationRule(ruleId, tenantId, new ServiceId("S1"), 
-            "SPEEDING", node, true, 5);
-        
+        NotificationRule rule = NotificationRule.reconstitute(
+                ruleId, tenantId, new ServiceId("S1"), "SPEEDING", node, true, 5);
+
         when(ruleRepository.findActiveRules(tenantId, "SPEEDING")).thenReturn(List.of(rule));
-        when(cooldownPort.isOnCooldown(ruleId, "V1")).thenReturn(false);
+        when(cooldownPort.isOnCooldown(ruleId, "ref-1")).thenReturn(false);
         when(node.evaluate(payload)).thenReturn(true);
-        // Atomic acquisition fails (concurrent process already acquired it)
-        when(cooldownPort.tryAcquireCooldown(ruleId, "V1", 5)).thenReturn(false);
-        
+        // Atomic acquisition fails — another instance already claimed this cooldown
+        when(cooldownPort.tryAcquireCooldown(ruleId, "ref-1", 5)).thenReturn(false);
+
         List<NotificationRule> result = service.evaluate(tenantId, "SPEEDING", payload);
-        
+
         assertTrue(result.isEmpty());
         verify(eventPublisher, never()).publish(any());
     }

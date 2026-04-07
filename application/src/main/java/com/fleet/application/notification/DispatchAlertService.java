@@ -11,26 +11,22 @@ import com.fleet.domain.notification.vo.EmailAddress;
 import com.fleet.domain.rule.vo.EventPayload;
 import com.fleet.domain.rule.vo.RuleId;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 import java.util.Map;
 
 /**
  * Service implementation for dispatching alerts.
- * Coordinates multi-channel delivery (Email, SMS, Webhook) while enforcing GDPR opt-in policies.
+ * Coordinates multi-channel delivery (Email, SMS, Webhook, Push)
+ * while enforcing GDPR opt-in policies for email recipients.
  */
+@RequiredArgsConstructor
 public class DispatchAlertService implements DispatchAlertUseCase {
 
     private final NotificationActionRepositoryPort actionRepo;
     private final SubscriptionCheckPort subscriptionCheckPort;
     private final NotificationDispatcherPort dispatcher;
-
-    public DispatchAlertService(NotificationActionRepositoryPort actionRepo,
-            SubscriptionCheckPort subscriptionCheckPort,
-            NotificationDispatcherPort dispatcher) {
-        this.actionRepo = actionRepo;
-        this.subscriptionCheckPort = subscriptionCheckPort;
-        this.dispatcher = dispatcher;
-    }
 
     @Override
     public void dispatch(RuleId ruleId, EventPayload payload) {
@@ -43,7 +39,6 @@ public class DispatchAlertService implements DispatchAlertUseCase {
             if (action.getChannelType() == ChannelType.EMAIL) {
                 EmailSubscription sub = subscriptionCheckPort.getSubscriptionStatus(
                         new EmailAddress(recipient), ruleId);
-
                 if (sub != null && !sub.canSend()) {
                     continue;
                 }
@@ -55,6 +50,7 @@ public class DispatchAlertService implements DispatchAlertUseCase {
                 case EMAIL   -> dispatcher.sendEmail(recipient, "Fleet Alert", message);
                 case SMS     -> dispatcher.sendSms(recipient, message);
                 case WEBHOOK -> dispatcher.sendWebhook(recipient, message);
+                case PUSH    -> dispatcher.sendPush(recipient, "Fleet Alert", message);
             }
         }
     }
@@ -65,8 +61,7 @@ public class DispatchAlertService implements DispatchAlertUseCase {
     private String renderTemplate(String template, Map<String, Object> data) {
         String result = template;
         for (Map.Entry<String, Object> entry : data.entrySet()) {
-            String placeholder = "{{" + entry.getKey() + "}}";
-            result = result.replace(placeholder, String.valueOf(entry.getValue()));
+            result = result.replace("{{" + entry.getKey() + "}}", String.valueOf(entry.getValue()));
         }
         return result;
     }

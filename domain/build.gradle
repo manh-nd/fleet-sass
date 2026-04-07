@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
-    // Để trống. Domain không phụ thuộc vào ai cả!
+    // Domain has zero external runtime dependencies — pure Java only.
+    // Lombok is an annotation processor (compile-time only) — not a runtime dependency.
 }

@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.0.5' apply false
-	id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'java'
+    id 'org.springframework.boot' version '4.0.5' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
 }
 
 allprojects {
@@ -32,29 +32,26 @@ subprojects {
     }
 
     dependencies {
+        // Lombok — compile-time only (annotation processor)
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
-        
+        testCompileOnly 'org.projectlombok:lombok'
+        testAnnotationProcessor 'org.projectlombok:lombok'
+
+        // JUnit + Mockito available in all modules for lightweight unit tests
         testImplementation 'org.junit.jupiter:junit-jupiter'
         testImplementation 'org.mockito:mockito-core'
         testImplementation 'org.mockito:mockito-junit-jupiter'
-        testImplementation 'org.testcontainers:junit-jupiter'
-        testImplementation 'org.testcontainers:postgresql'
-        testImplementation 'org.testcontainers:testcontainers'
-        testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
-        testCompileOnly 'org.projectlombok:lombok'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-        testAnnotationProcessor 'org.projectlombok:lombok'
     }
 
     tasks.named('test') {
         useJUnitPlatform()
-        finalizedBy jacocoTestReport // report is always generated after tests run
+        finalizedBy jacocoTestReport
     }
 
     jacocoTestReport {
-        dependsOn test // tests are required to run before generating the report
+        dependsOn test
         reports {
             xml.required = true
             html.required = true

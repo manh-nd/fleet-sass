@@ -10,6 +10,7 @@ import com.fleet.infrastructure.adapter.in.web.dto.CreateRuleRequest;
 import com.fleet.infrastructure.adapter.in.web.dto.NotificationRuleResponse;
 import com.fleet.infrastructure.adapter.in.web.dto.UpdateRuleRequest;
 import com.fleet.infrastructure.adapter.out.db.RuleAstParser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ import java.util.UUID;
 
 /**
  * Inbound adapter for REST operations on notification rules.
- * Maps HTTP requests to {@link ManageNotificationRuleUseCase} calls.
+ * All exceptions bubble up to {@link GlobalExceptionHandler} for consistent error responses.
  */
 @RestController
 @RequestMapping("/api/v1/rules")
@@ -28,7 +29,7 @@ public class RuleController {
 
     private final ManageNotificationRuleUseCase manageRulesUseCase;
     private final RuleAstParser ruleAstParser;
-    private final ObjectMapper objectMapper; // Spring Boot autoconfigures a standard Jackson ObjectMapper
+    private final ObjectMapper objectMapper;
 
     @GetMapping
     public ResponseEntity<List<NotificationRuleResponse>> listRules(@RequestParam UUID tenantId) {
@@ -40,43 +41,34 @@ public class RuleController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> createRule(@RequestBody CreateRuleRequest request) {
-        try {
-            String conditionsJson = objectMapper.writeValueAsString(request.conditions());
-            RuleNode root = ruleAstParser.parse(conditionsJson);
-
-            manageRulesUseCase.createRule(
-                    new TenantId(request.tenantId()),
-                    new ServiceId(request.serviceId()),
-                    request.eventType(),
-                    root,
-                    request.cooldownMinutes(),
-                    request.active());
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<Void> createRule(@Valid @RequestBody CreateRuleRequest request) {
+        String conditionsJson = objectMapper.writeValueAsString(request.conditions());
+        RuleNode root = ruleAstParser.parse(conditionsJson);
+        manageRulesUseCase.createRule(
+                new TenantId(request.tenantId()),
+                new ServiceId(request.serviceId()),
+                request.eventType(),
+                root,
+                request.cooldownMinutes(),
+                request.active());
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{ruleId}")
-    public ResponseEntity<Void> updateRule(@PathVariable UUID ruleId,
-            @RequestBody UpdateRuleRequest request) {
-        try {
-            String conditionsJson = objectMapper.writeValueAsString(request.conditions());
-            RuleNode root = ruleAstParser.parse(conditionsJson);
-
-            manageRulesUseCase.updateRule(
-                    new RuleId(ruleId),
-                    new TenantId(request.tenantId()),
-                    new ServiceId(request.serviceId()),
-                    request.eventType(),
-                    root,
-                    request.cooldownMinutes(),
-                    request.active());
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<Void> updateRule(
+            @PathVariable UUID ruleId,
+            @Valid @RequestBody UpdateRuleRequest request) {
+        String conditionsJson = objectMapper.writeValueAsString(request.conditions());
+        RuleNode root = ruleAstParser.parse(conditionsJson);
+        manageRulesUseCase.updateRule(
+                new RuleId(ruleId),
+                new TenantId(request.tenantId()),
+                new ServiceId(request.serviceId()),
+                request.eventType(),
+                root,
+                request.cooldownMinutes(),
+                request.active());
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{ruleId}")

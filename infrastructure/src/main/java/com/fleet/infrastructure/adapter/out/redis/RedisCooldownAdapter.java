@@ -2,6 +2,7 @@ package com.fleet.infrastructure.adapter.out.redis;
 
 import com.fleet.domain.rule.port.out.CooldownPort;
 import com.fleet.domain.rule.vo.RuleId;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -9,45 +10,43 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Redis-based implementation of {@link CooldownPort}.
- * Uses Redis TTL and set-if-absent (NX) to manage vehicle-rule cooldowns across multiple instances.
+ * Uses Redis TTL and set-if-absent (SETNX) to manage per-entity, per-rule cooldowns
+ * safely across multiple service instances.
  */
 @Repository
+@RequiredArgsConstructor
 public class RedisCooldownAdapter implements CooldownPort {
 
     private final StringRedisTemplate redisTemplate;
 
-    public RedisCooldownAdapter(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
-
-    private String buildKey(RuleId ruleId, String vehicleId) {
-        // Cấu trúc Key: cooldown:rule:{id}:vehicle:{id}
-        return "cooldown:rule:" + ruleId.value() + ":vehicle:" + vehicleId;
-    }
-
-    @Override
-    public boolean isOnCooldown(RuleId ruleId, String vehicleId) {
-        String key = buildKey(ruleId, vehicleId);
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    /**
+     * Builds the Redis key for a rule + entity combination.
+     * Format: {@code cooldown:rule:{ruleId}:ref:{referenceId}}
+     */
+    private String buildKey(RuleId ruleId, String referenceId) {
+        return "cooldown:rule:" + ruleId.value() + ":ref:" + referenceId;
     }
 
     @Override
-    public void setCooldown(RuleId ruleId, String vehicleId, int cooldownMinutes) {
-        if (cooldownMinutes <= 0)
-            return; // Nếu khách setup 0 phút thì bỏ qua
-
-        String key = buildKey(ruleId, vehicleId);
-        // Lưu giá trị giả "LOCKED" và quan trọng nhất là set TTL tự động hết hạn
-        redisTemplate.opsForValue().set(key, "LOCKED", cooldownMinutes, TimeUnit.MINUTES);
+    public boolean isOnCooldown(RuleId ruleId, String referenceId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(ruleId, referenceId)));
     }
 
     @Override
-    public boolean tryAcquireCooldown(RuleId ruleId, String vehicleId, int cooldownMinutes) {
+    public void setCooldown(RuleId ruleId, String referenceId, int cooldownMinutes) {
         if (cooldownMinutes <= 0) {
-            return true; // No cooldown required, always acquired
+            return; // Zero-minute cooldown means no suppression
         }
-        
-        String key = buildKey(ruleId, vehicleId);
-        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, "LOCKED", cooldownMinutes, TimeUnit.MINUTES));
+        redisTemplate.opsForValue().set(buildKey(ruleId, referenceId), "LOCKED", cooldownMinutes, TimeUnit.MINUTES);
+    }
+
+    @Override
+    public boolean tryAcquireCooldown(RuleId ruleId, String referenceId, int cooldownMinutes) {
+        if (cooldownMinutes <= 0) {
+            return true; // No cooldown configured — always allow
+        }
+        String key = buildKey(ruleId, referenceId);
+        return Boolean.TRUE.equals(
+                redisTemplate.opsForValue().setIfAbsent(key, "LOCKED", cooldownMinutes, TimeUnit.MINUTES));
     }
 }

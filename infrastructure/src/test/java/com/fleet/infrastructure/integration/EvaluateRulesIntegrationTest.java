@@ -101,7 +101,7 @@ public class EvaluateRulesIntegrationTest {
         .update();
 
         // Prepare EventPayload
-        EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
+        EventPayload payload = new EventPayload("ref-V1", Map.of("speed", 100));
 
         // Execute UseCase
         List<NotificationRule> result = evaluateRulesUseCase.evaluate(new TenantId(tenantId), eventType, payload);
@@ -131,7 +131,7 @@ public class EvaluateRulesIntegrationTest {
         .param("conditions", "{\"type\":\"CONDITION\", \"field\":\"speed\", \"operator\":\">\", \"value\":80}")
         .update();
 
-        EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
+        EventPayload payload = new EventPayload("ref-V1", Map.of("speed", 100));
 
         // 1st time - should trigger
         evaluateRulesUseCase.evaluate(new TenantId(tenantId), eventType, payload);

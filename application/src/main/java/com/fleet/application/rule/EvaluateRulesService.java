@@ -30,12 +30,12 @@ public class EvaluateRulesService implements EvaluateRulesUseCase {
         List<NotificationRule> activeRules = ruleRepository.findActiveRules(tenantId, eventType);
         List<NotificationRule> triggeredRules = new ArrayList<>();
         for (NotificationRule rule : activeRules) {
-            if (cooldownPort.isOnCooldown(rule.getId(), payload.vehicleId())) {
+            if (cooldownPort.isOnCooldown(rule.getId(), payload.referenceId())) {
                 continue;
             }
             if (rule.isSatisfiedBy(payload)) {
-                // Try to atomically acquire the cooldown lock
-                if (cooldownPort.tryAcquireCooldown(rule.getId(), payload.vehicleId(), rule.getCooldownMinutes())) {
+                // Atomically acquire the cooldown lock to prevent concurrent duplicate triggers
+                if (cooldownPort.tryAcquireCooldown(rule.getId(), payload.referenceId(), rule.getCooldownMinutes())) {
                     triggeredRules.add(rule);
                     eventPublisher.publish(new RuleTriggeredEvent(rule.getId(), payload));
                 }

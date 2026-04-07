@@ -5,7 +5,6 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.rule.ast.ConditionNode;
 import com.fleet.domain.rule.ast.Operator;
 import com.fleet.domain.rule.vo.EventPayload;
-import com.fleet.domain.rule.vo.RuleId;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -15,46 +14,67 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class NotificationRuleTest {
 
+    private final TenantId tenantId = new TenantId(UUID.randomUUID());
+    private final ServiceId serviceId = new ServiceId("s1");
+    private final ConditionNode speedCondition = new ConditionNode("speed", Operator.GT, 80);
+
     @Test
     void shouldBeSatisfiedByPayload() {
-        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
-        NotificationRule rule = buildRule(speedHigh, true);
-
-        assertTrue(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 100))));
+        NotificationRule rule = activeRule(speedCondition);
+        assertTrue(rule.isSatisfiedBy(new EventPayload("ref-1", Map.of("speed", 100))));
     }
 
     @Test
     void shouldNotBeSatisfiedWhenConditionDoesNotMatch() {
-        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
-        NotificationRule rule = buildRule(speedHigh, true);
-
-        // speed 60 does NOT exceed threshold of 80
-        assertFalse(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 60))));
+        NotificationRule rule = activeRule(speedCondition);
+        assertFalse(rule.isSatisfiedBy(new EventPayload("ref-1", Map.of("speed", 60))));
     }
 
     @Test
     void shouldNotBeSatisfiedWhenInactive() {
-        ConditionNode speedHigh = new ConditionNode("speed", Operator.GT, 80);
-        NotificationRule rule = buildRule(speedHigh, false);
-
-        assertFalse(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 100))));
+        NotificationRule rule = NotificationRule.create(tenantId, serviceId, "SPEEDING", speedCondition, 5, false);
+        assertFalse(rule.isSatisfiedBy(new EventPayload("ref-1", Map.of("speed", 100))));
     }
 
     @Test
     void shouldNotBeSatisfiedWhenConditionRootIsNull() {
-        NotificationRule rule = buildRule(null, true);
-
-        assertFalse(rule.isSatisfiedBy(new EventPayload("v1", Map.of("speed", 100))));
+        // reconstitute allows null conditionRoot (for rules loaded from DB mid-migration)
+        NotificationRule rule = NotificationRule.reconstitute(
+                null, tenantId, serviceId, "SPEEDING", null, true, 5);
+        assertFalse(rule.isSatisfiedBy(new EventPayload("ref-1", Map.of("speed", 100))));
     }
 
-    private NotificationRule buildRule(ConditionNode condition, boolean isActive) {
-        return new NotificationRule(
-                new RuleId(UUID.randomUUID()),
-                new TenantId(UUID.randomUUID()),
-                new ServiceId("s1"),
-                "SPEEDING",
-                condition,
-                isActive,
-                5);
+    @Test
+    void createShouldThrowOnBlankEventType() {
+        assertThrows(IllegalArgumentException.class,
+                () -> NotificationRule.create(tenantId, serviceId, " ", speedCondition, 5, true));
+    }
+
+    @Test
+    void createShouldThrowOnNegativeCooldown() {
+        assertThrows(IllegalArgumentException.class,
+                () -> NotificationRule.create(tenantId, serviceId, "SPEEDING", speedCondition, -1, true));
+    }
+
+    @Test
+    void activateShouldReturnActiveRule() {
+        NotificationRule inactive = NotificationRule.create(tenantId, serviceId, "SPEEDING", speedCondition, 5, false);
+        NotificationRule active = inactive.activate();
+        assertTrue(active.isActive());
+        assertFalse(inactive.isActive()); // original unchanged
+    }
+
+    @Test
+    void deactivateShouldReturnInactiveRule() {
+        NotificationRule active = activeRule(speedCondition);
+        NotificationRule inactive = active.deactivate();
+        assertFalse(inactive.isActive());
+        assertTrue(active.isActive()); // original unchanged
+    }
+
+    // ---- Helpers ----
+
+    private NotificationRule activeRule(ConditionNode condition) {
+        return NotificationRule.create(tenantId, serviceId, "SPEEDING", condition, 5, true);
     }
 }

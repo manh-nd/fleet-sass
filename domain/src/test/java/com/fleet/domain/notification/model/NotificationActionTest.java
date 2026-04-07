@@ -13,7 +13,7 @@ class NotificationActionTest {
     @Test
     void shouldExposeFieldsCorrectly() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "test@example.com", "Hello Speeding!");
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.EMAIL, "test@example.com", "Hello Speeding!");
 
         assertEquals(ChannelType.EMAIL, action.getChannelType());
         assertEquals("test@example.com", action.getRecipient());
@@ -24,28 +24,36 @@ class NotificationActionTest {
     @Test
     void shouldSupportAllChannelTypes() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        NotificationAction email = new NotificationAction(ruleId, ChannelType.EMAIL, "a@b.com", "msg");
-        NotificationAction sms = new NotificationAction(ruleId, ChannelType.SMS, "0901234567", "msg");
-        NotificationAction webhook = new NotificationAction(ruleId, ChannelType.WEBHOOK, "http://x.com", "msg");
+        NotificationAction email   = NotificationAction.create(ruleId, ChannelType.EMAIL,   "a@b.com",          "msg");
+        NotificationAction sms     = NotificationAction.create(ruleId, ChannelType.SMS,     "0901234567",       "msg");
+        NotificationAction webhook = NotificationAction.create(ruleId, ChannelType.WEBHOOK, "http://x.com",     "msg");
+        NotificationAction push    = NotificationAction.create(ruleId, ChannelType.PUSH,    "device-token-abc", "msg");
 
-        assertEquals(ChannelType.EMAIL, email.getChannelType());
-        assertEquals(ChannelType.SMS, sms.getChannelType());
+        assertEquals(ChannelType.EMAIL,   email.getChannelType());
+        assertEquals(ChannelType.SMS,     sms.getChannelType());
         assertEquals(ChannelType.WEBHOOK, webhook.getChannelType());
+        assertEquals(ChannelType.PUSH,    push.getChannelType());
     }
 
     @Test
     void channelTypeShouldResolveFromString() {
-        assertEquals(ChannelType.EMAIL, ChannelType.fromString("EMAIL"));
-        assertEquals(ChannelType.EMAIL, ChannelType.fromString("email"));
-        assertEquals(ChannelType.SMS, ChannelType.fromString("SMS"));
+        assertEquals(ChannelType.EMAIL,   ChannelType.fromString("EMAIL"));
+        assertEquals(ChannelType.EMAIL,   ChannelType.fromString("email"));
+        assertEquals(ChannelType.SMS,     ChannelType.fromString("SMS"));
         assertEquals(ChannelType.WEBHOOK, ChannelType.fromString("WEBHOOK"));
+        assertEquals(ChannelType.PUSH,    ChannelType.fromString("PUSH"));
+    }
+
+    @Test
+    void shouldThrowWhenRecipientIsBlank() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        assertThrows(IllegalArgumentException.class,
+                () -> NotificationAction.create(ruleId, ChannelType.EMAIL, "", "msg"));
     }
 
     @Test
     void channelTypeShouldThrowForUnsupportedValue() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> ChannelType.fromString("PUSH"));
-        assertTrue(ex.getMessage().contains("Unsupported channel type"));
+        assertThrows(IllegalArgumentException.class, () -> ChannelType.fromString("FAX"));
     }
 
     @Test

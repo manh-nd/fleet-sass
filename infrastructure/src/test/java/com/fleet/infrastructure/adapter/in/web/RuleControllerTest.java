@@ -13,7 +13,6 @@ import com.fleet.infrastructure.adapter.out.db.RuleAstParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
@@ -42,29 +41,24 @@ class RuleControllerTest {
     @Mock
     private RuleAstParser ruleAstParser;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
-    @InjectMocks
-    private RuleController ruleController;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        // Need to provide an ObjectMapper to the controller, the @InjectMocks might leave it null or we can pass it manually.
-        ruleController = new RuleController(manageRulesUseCase, ruleAstParser, objectMapper);
-        mockMvc = MockMvcBuilders.standaloneSetup(ruleController).build();
+        RuleController controller = new RuleController(manageRulesUseCase, ruleAstParser, objectMapper);
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
     void shouldCreateRuleSuccessfully() throws Exception {
         UUID tenantId = UUID.randomUUID();
         CreateRuleRequest request = new CreateRuleRequest(
-                tenantId,
-                "S1",
-                "SPEEDING",
+                tenantId, "S1", "SPEEDING",
                 Map.of("type", "CONDITION", "field", "speed", "operator", ">", "value", 80),
-                5,
-                true
-        );
+                5, true);
 
         ConditionNode mockNode = new ConditionNode("speed", Operator.GT, 80);
         when(ruleAstParser.parse(any())).thenReturn(mockNode);
@@ -80,23 +74,18 @@ class RuleControllerTest {
                 eq("SPEEDING"),
                 eq(mockNode),
                 eq(5),
-                eq(true)
-        );
+                eq(true));
     }
 
     @Test
-    void shouldReturnBadRequestWhenExceptionIsThrown() throws Exception {
+    void shouldReturnBadRequestWhenParsingFails() throws Exception {
         UUID tenantId = UUID.randomUUID();
         CreateRuleRequest request = new CreateRuleRequest(
-                tenantId,
-                "S1",
-                "SPEEDING",
-                null,
-                5,
-                true
-        );
+                tenantId, "S1", "SPEEDING",
+                Map.of("type", "UNKNOWN"),
+                5, true);
 
-        when(ruleAstParser.parse(any())).thenThrow(new RuntimeException("Invalid JSON"));
+        when(ruleAstParser.parse(any())).thenThrow(new com.fleet.domain.shared.exception.RuleParsingException("Unknown node type"));
 
         mockMvc.perform(post("/api/v1/rules")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -109,13 +98,9 @@ class RuleControllerTest {
         UUID ruleId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         UpdateRuleRequest request = new UpdateRuleRequest(
-                tenantId,
-                "S1",
-                "SPEEDING",
+                tenantId, "S1", "SPEEDING",
                 Map.of("type", "CONDITION", "field", "speed", "operator", ">", "value", 90),
-                10,
-                false
-        );
+                10, false);
 
         ConditionNode mockNode = new ConditionNode("speed", Operator.GT, 90);
         when(ruleAstParser.parse(any())).thenReturn(mockNode);
@@ -132,8 +117,7 @@ class RuleControllerTest {
                 eq("SPEEDING"),
                 eq(mockNode),
                 eq(10),
-                eq(false)
-        );
+                eq(false));
     }
 
     @Test
@@ -147,7 +131,6 @@ class RuleControllerTest {
 
         verify(manageRulesUseCase).deleteRule(
                 eq(new RuleId(ruleId)),
-                eq(new TenantId(tenantId))
-        );
+                eq(new TenantId(tenantId)));
     }
 }

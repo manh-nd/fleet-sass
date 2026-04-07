@@ -28,7 +28,7 @@ public class PostgresActionRepositoryAdapter implements NotificationActionReposi
 
         return jdbcClient.sql(sql)
                 .param("ruleId", ruleId.value())
-                .query((rs, rowNum) -> new NotificationAction(
+                .query((rs, rowNum) -> NotificationAction.create(
                         ruleId,
                         ChannelType.fromString(rs.getString("channel_type")),
                         rs.getString("recipient"),

@@ -24,12 +24,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DispatchAlertServiceTest {
 
-    @Mock
-    private NotificationActionRepositoryPort actionRepo;
-    @Mock
-    private SubscriptionCheckPort subscriptionCheckPort;
-    @Mock
-    private NotificationDispatcherPort dispatcher;
+    @Mock private NotificationActionRepositoryPort actionRepo;
+    @Mock private SubscriptionCheckPort subscriptionCheckPort;
+    @Mock private NotificationDispatcherPort dispatcher;
 
     @InjectMocks
     private DispatchAlertService service;
@@ -37,12 +34,13 @@ class DispatchAlertServiceTest {
     @Test
     void shouldDispatchEmailWhenSubscribed() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
-        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "test@test.com", "Speed {{speed}} reached!");
+        EventPayload payload = new EventPayload("ref-1", Map.of("speed", 100));
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.EMAIL, "test@test.com", "Speed {{speed}} reached!");
 
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
         when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("test@test.com"), ruleId))
-                .thenReturn(new EmailSubscription(new EmailAddress("test@test.com"), ruleId, EmailSubscription.SubscriptionStatus.SUBSCRIBED));
+                .thenReturn(new EmailSubscription(new EmailAddress("test@test.com"), ruleId,
+                        EmailSubscription.SubscriptionStatus.SUBSCRIBED));
 
         service.dispatch(ruleId, payload);
 
@@ -52,12 +50,13 @@ class DispatchAlertServiceTest {
     @Test
     void shouldSkipEmailWhenUnsubscribed() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of("speed", 100));
-        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "unsubscribed@test.com", "Speed reached!");
+        EventPayload payload = new EventPayload("ref-1", Map.of("speed", 100));
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.EMAIL, "unsub@test.com", "Speed reached!");
 
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
-        when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("unsubscribed@test.com"), ruleId))
-                .thenReturn(new EmailSubscription(new EmailAddress("unsubscribed@test.com"), ruleId, EmailSubscription.SubscriptionStatus.UNSUBSCRIBED));
+        when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("unsub@test.com"), ruleId))
+                .thenReturn(new EmailSubscription(new EmailAddress("unsub@test.com"), ruleId,
+                        EmailSubscription.SubscriptionStatus.UNSUBSCRIBED));
 
         service.dispatch(ruleId, payload);
 
@@ -67,12 +66,13 @@ class DispatchAlertServiceTest {
     @Test
     void shouldSkipEmailWhenPending() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of());
-        NotificationAction action = new NotificationAction(ruleId, ChannelType.EMAIL, "pending@test.com", "Alert!");
+        EventPayload payload = new EventPayload("ref-1", Map.of());
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.EMAIL, "pending@test.com", "Alert!");
 
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
         when(subscriptionCheckPort.getSubscriptionStatus(new EmailAddress("pending@test.com"), ruleId))
-                .thenReturn(new EmailSubscription(new EmailAddress("pending@test.com"), ruleId, EmailSubscription.SubscriptionStatus.PENDING));
+                .thenReturn(new EmailSubscription(new EmailAddress("pending@test.com"), ruleId,
+                        EmailSubscription.SubscriptionStatus.PENDING));
 
         service.dispatch(ruleId, payload);
 
@@ -82,8 +82,8 @@ class DispatchAlertServiceTest {
     @Test
     void shouldDispatchSms() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of("driver", "John"));
-        NotificationAction action = new NotificationAction(ruleId, ChannelType.SMS, "0901234567", "Hi {{driver}}!");
+        EventPayload payload = new EventPayload("ref-1", Map.of("driver", "John"));
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.SMS, "0901234567", "Hi {{driver}}!");
 
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
 
@@ -95,13 +95,26 @@ class DispatchAlertServiceTest {
     @Test
     void shouldDispatchWebhook() {
         RuleId ruleId = new RuleId(UUID.randomUUID());
-        EventPayload payload = new EventPayload("V1", Map.of("id", "123"));
-        NotificationAction action = new NotificationAction(ruleId, ChannelType.WEBHOOK, "http://endpoint.com", "Event: {{id}}");
+        EventPayload payload = new EventPayload("ref-1", Map.of("id", "123"));
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.WEBHOOK, "http://endpoint.com", "Event: {{id}}");
 
         when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
 
         service.dispatch(ruleId, payload);
 
         verify(dispatcher).sendWebhook("http://endpoint.com", "Event: 123");
+    }
+
+    @Test
+    void shouldDispatchPush() {
+        RuleId ruleId = new RuleId(UUID.randomUUID());
+        EventPayload payload = new EventPayload("ref-1", Map.of("zone", "A1"));
+        NotificationAction action = NotificationAction.create(ruleId, ChannelType.PUSH, "device-token-xyz", "Entered zone {{zone}}");
+
+        when(actionRepo.getActionsForRule(ruleId)).thenReturn(List.of(action));
+
+        service.dispatch(ruleId, payload);
+
+        verify(dispatcher).sendPush("device-token-xyz", "Fleet Alert", "Entered zone A1");
     }
 }

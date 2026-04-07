@@ -67,7 +67,7 @@ public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {
         String jsonbString = rs.getString("conditions_json");
         int cooldownMinutes = rs.getInt("cooldown_minutes");
         RuleNode rootCondition = astParser.parse(jsonbString);
-        return new NotificationRule(id, tId, sId, eType, rootCondition, isActive, cooldownMinutes);
+        return NotificationRule.reconstitute(id, tId, sId, eType, rootCondition, isActive, cooldownMinutes);
     }
 
     @Override
