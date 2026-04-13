@@ -1,34 +1,25 @@
 package com.fleet.infrastructure.adapter.in.web.dto;
 
 import com.fleet.domain.notification.model.NotificationLog;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.UUID;
 
 /**
  * Response body for a single notification delivery log entry.
- *
- * @param notificationId unique ID of the notification event
- * @param tenantId       owning tenant
- * @param serviceId      calling service
- * @param channel        delivery channel used
- * @param recipient      delivery recipient
- * @param status         current delivery status (QUEUED, SENT, DELIVERED, FAILED)
- * @param failReason     failure reason, or {@code null} if not failed
- * @param attempts       number of dispatch attempts
- * @param createdAt      when the notification was first submitted
  */
+@Schema(description = "Response body for a single notification delivery log entry")
 public record NotificationLogResponse(
-        UUID notificationId,
-        UUID tenantId,
-        String serviceId,
-        String channel,
-        String recipient,
-        String status,
-        String failReason,
-        int attempts,
-        Instant createdAt
-) {
+        @Schema(description = "Unique ID of the notification event", example = "550e8400-e29b-41d4-a716-446655440000") UUID notificationId,
+        @Schema(description = "Owning tenant UUID", example = "550e8400-e29b-41d4-a716-446655440000") UUID tenantId,
+        @Schema(description = "Calling service identifier", example = "billing-service") String serviceId,
+        @Schema(description = "Delivery channel used", example = "EMAIL") String channel,
+        @Schema(description = "Delivery recipient", example = "user@example.com") String recipient,
+        @Schema(description = "Current delivery status", example = "SENT", allowableValues = {"QUEUED", "SENT", "DELIVERED", "FAILED"}) String status,
+        @Schema(description = "Failure reason, or null if not failed", example = "Invalid email format") String failReason,
+        @Schema(description = "Number of dispatch attempts", example = "1") int attempts,
+        @Schema(description = "When the notification was first submitted") Instant createdAt) {
     public static NotificationLogResponse from(NotificationLog log) {
         return new NotificationLogResponse(
                 log.getId().value(),

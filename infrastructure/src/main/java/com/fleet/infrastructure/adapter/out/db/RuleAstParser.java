@@ -23,11 +23,17 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * Infrastructure implementation of {@link RuleConditionSerializer}.
  *
- * <p>Handles bidirectional mapping between the domain AST ({@link RuleNode}) and the
- * JSON format stored in PostgreSQL JSONB columns.</p>
+ * <p>
+ * Handles bidirectional mapping between the domain AST ({@link RuleNode}) and
+ * the
+ * JSON format stored in PostgreSQL JSONB columns.
+ * </p>
  *
- * <p>The {@code "type"} discriminator ("CONDITION" / "LOGICAL") and operator symbol strings
- * are infrastructure concerns — they live here, not in the domain model.</p>
+ * <p>
+ * The {@code "type"} discriminator ("CONDITION" / "LOGICAL") and operator
+ * symbol strings
+ * are infrastructure concerns — they live here, not in the domain model.
+ * </p>
  */
 @Component
 @RequiredArgsConstructor
@@ -44,7 +50,8 @@ public class RuleAstParser implements RuleConditionSerializer {
 
     @Override
     public String serialize(RuleNode node) {
-        if (node == null) return null;
+        if (node == null)
+            return null;
         try {
             return objectMapper.writeValueAsString(buildJson(node));
         } catch (Exception e) {
@@ -57,10 +64,12 @@ public class RuleAstParser implements RuleConditionSerializer {
     /**
      * Parses a JSON string into a domain {@link RuleNode} tree.
      *
-     * @throws RuleParsingException if the JSON is malformed or contains an unknown node type
+     * @throws RuleParsingException if the JSON is malformed or contains an unknown
+     *                              node type
      */
     public RuleNode parse(String jsonString) {
-        if (jsonString == null || jsonString.isBlank()) return null;
+        if (jsonString == null || jsonString.isBlank())
+            return null;
         try {
             JsonNode rootJson = objectMapper.readTree(jsonString);
             return buildNode(rootJson);
@@ -85,7 +94,7 @@ public class RuleAstParser implements RuleConditionSerializer {
             return new LogicalNode(operator, children);
 
         } else if ("CONDITION".equals(type)) {
-            String field    = jsonNode.get("field").asString();
+            String field = jsonNode.get("field").asString();
             Operator operator = Operator.fromSymbol(jsonNode.get("operator").asString());
             ConditionValue conditionValue = extractConditionValue(jsonNode.get("value"));
             return new ConditionNode(field, operator, conditionValue);
@@ -95,8 +104,10 @@ public class RuleAstParser implements RuleConditionSerializer {
     }
 
     private ConditionValue extractConditionValue(JsonNode valueNode) {
-        if (valueNode.isNumber())  return ConditionValue.NumericValue.of(valueNode.numberValue());
-        if (valueNode.isBoolean()) return new ConditionValue.BooleanValue(valueNode.booleanValue());
+        if (valueNode.isNumber())
+            return ConditionValue.NumericValue.of(valueNode.numberValue());
+        if (valueNode.isBoolean())
+            return new ConditionValue.BooleanValue(valueNode.booleanValue());
         if (valueNode.isArray()) {
             List<ConditionValue> elements = new ArrayList<>();
             for (JsonNode element : valueNode) {
@@ -134,18 +145,18 @@ public class RuleAstParser implements RuleConditionSerializer {
 
     private void writeConditionValue(ObjectNode json, ConditionValue value) {
         switch (value) {
-            case ConditionValue.NumericValue n  -> json.put("value", n.number());
-            case ConditionValue.BooleanValue b  -> json.put("value", b.flag());
-            case ConditionValue.StringValue s   -> json.put("value", s.text());
+            case ConditionValue.NumericValue n -> json.put("value", n.number());
+            case ConditionValue.BooleanValue b -> json.put("value", b.flag());
+            case ConditionValue.StringValue s -> json.put("value", s.text());
             case ConditionValue.ListValue lv -> {
                 ArrayNode arr = json.putArray("value");
                 for (ConditionValue element : lv.elements()) {
                     switch (element) {
                         case ConditionValue.NumericValue n -> arr.add(n.number());
                         case ConditionValue.BooleanValue b -> arr.add(b.flag());
-                        case ConditionValue.StringValue s  -> arr.add(s.text());
+                        case ConditionValue.StringValue s -> arr.add(s.text());
                         case ConditionValue.ListValue ignored ->
-                                throw new RuleParsingException("Nested lists are not supported in condition values");
+                            throw new RuleParsingException("Nested lists are not supported in condition values");
                     }
                 }
             }

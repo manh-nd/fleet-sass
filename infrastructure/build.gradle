@@ -25,6 +25,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 
     // Cache / Cooldown
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // Production readiness — metrics, health, info
@@ -36,6 +37,7 @@ dependencies {
     // Rate limiting — token bucket algorithm with Redis backend
     implementation 'com.bucket4j:bucket4j-core:8.10.1'
     implementation 'com.bucket4j:bucket4j-redis:8.10.1'
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
 
     // PostgreSQL JDBC driver (runtime only)
     runtimeOnly 'org.postgresql:postgresql'

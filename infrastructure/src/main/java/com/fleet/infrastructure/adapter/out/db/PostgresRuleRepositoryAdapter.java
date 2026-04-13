@@ -22,11 +22,16 @@ import lombok.RequiredArgsConstructor;
 /**
  * PostgreSQL implementation of {@link RuleRepositoryPort}.
  *
- * <p>Uses {@link JdbcClient} for persistence and handles rule conditions as JSONB.
- * Cursor-based pagination uses a UUID cursor encoded as Base64 for opacity.</p>
+ * <p>
+ * Uses {@link JdbcClient} for persistence and handles rule conditions as JSONB.
+ * Cursor-based pagination uses a UUID cursor encoded as Base64 for opacity.
+ * </p>
  *
- * <p>The cursor encodes the last returned row's UUID. Subsequent queries use
- * {@code WHERE id > :cursor ORDER BY id} to fetch the next page deterministically.</p>
+ * <p>
+ * The cursor encodes the last returned row's UUID. Subsequent queries use
+ * {@code WHERE id > :cursor ORDER BY id} to fetch the next page
+ * deterministically.
+ * </p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -151,13 +156,13 @@ public class PostgresRuleRepositoryAdapter implements RuleRepositoryPort {
     // ---- Private helpers ----
 
     private NotificationRule mapRow(ResultSet rs) throws SQLException {
-        RuleId id             = new RuleId(rs.getObject("id", UUID.class));
-        TenantId tId          = new TenantId(rs.getObject("tenant_id", UUID.class));
-        ServiceId sId         = new ServiceId(rs.getString("service_id"));
-        String eType          = rs.getString("event_type");
-        boolean isActive      = rs.getBoolean("is_active");
-        String jsonbString    = rs.getString("conditions_json");
-        int cooldownMinutes   = rs.getInt("cooldown_minutes");
+        RuleId id = new RuleId(rs.getObject("id", UUID.class));
+        TenantId tId = new TenantId(rs.getObject("tenant_id", UUID.class));
+        ServiceId sId = new ServiceId(rs.getString("service_id"));
+        String eType = rs.getString("event_type");
+        boolean isActive = rs.getBoolean("is_active");
+        String jsonbString = rs.getString("conditions_json");
+        int cooldownMinutes = rs.getInt("cooldown_minutes");
         RuleNode rootCondition = astParser.parse(jsonbString);
         return NotificationRule.reconstitute(id, tId, sId, eType, rootCondition, isActive, cooldownMinutes);
     }

@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 
 /**
  * Centralized exception handler for all REST controllers.
- * Translates domain exceptions into structured {@link ErrorResponse} bodies with appropriate HTTP status codes.
+ * Translates domain exceptions into structured {@link ErrorResponse} bodies
+ * with appropriate HTTP status codes.
  */
 @RestControllerAdvice
 @Slf4j

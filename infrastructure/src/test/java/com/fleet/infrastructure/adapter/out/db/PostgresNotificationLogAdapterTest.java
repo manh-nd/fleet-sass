@@ -5,7 +5,6 @@ import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.notification.model.DeliveryStatus;
 import com.fleet.domain.notification.model.NotificationAction.ChannelType;
 import com.fleet.domain.notification.model.NotificationLog;
-import com.fleet.domain.notification.vo.NotificationId;
 import com.fleet.domain.shared.pagination.CursorPage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

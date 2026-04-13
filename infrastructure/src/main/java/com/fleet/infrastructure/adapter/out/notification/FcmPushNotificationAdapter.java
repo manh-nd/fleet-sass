@@ -1,6 +1,10 @@
 package com.fleet.infrastructure.adapter.out.notification;
 
 import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.Notification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -40,14 +44,21 @@ public class FcmPushNotificationAdapter implements NotificationDispatcherPort {
 
     @Override
     public void sendPush(String deviceToken, String title, String body) {
-        // TODO: replace with Firebase Admin SDK call
-        // Message message = Message.builder()
-        //     .setToken(deviceToken)
-        //     .setNotification(Notification.builder().setTitle(title).setBody(body).build())
-        //     .build();
-        // FirebaseMessaging.getInstance().send(message);
+        try {
+            Message message = Message.builder()
+                    .setToken(deviceToken)
+                    .setNotification(Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .build();
 
-        log.info("[FCM STUB] Sending push to token={}, title='{}', body='{}'", deviceToken, title, body);
-        // Simulate successful FCM dispatch
+            String response = FirebaseMessaging.getInstance().send(message);
+            log.info("Successfully sent FCM message: {}", response);
+        } catch (FirebaseMessagingException e) {
+            log.error("Failed to send FCM message to token: {}", deviceToken, e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending FCM message", e);
+        }
     }
 }

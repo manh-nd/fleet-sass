@@ -4,7 +4,12 @@ import com.fleet.application.notification.usecase.ManageTemplateUseCase;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.notification.model.Template;
+import com.fleet.infrastructure.adapter.in.web.dto.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,11 +23,15 @@ import java.util.UUID;
 /**
  * REST controller for managing notification templates.
  *
- * <p>Templates are locale-keyed content bodies used by the notification hub
+ * <p>
+ * Templates are locale-keyed content bodies used by the notification hub
  * to render messages in the recipient's language. All endpoints are scoped
- * to a (tenantId, serviceId) pair supplied via query parameters.</p>
+ * to a (tenantId, serviceId) pair supplied via query parameters.
+ * </p>
  *
- * <p>Base path: {@code /api/v1/templates}</p>
+ * <p>
+ * Base path: {@code /api/v1/templates}
+ * </p>
  */
 @RestController
 @RequestMapping("/api/v1/templates")
@@ -39,13 +48,14 @@ public class TemplateController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a notification template",
-               description = "Registers a new template with locale-specific content. English fallback is mandatory.")
+    @Operation(summary = "Create a notification template", description = "Registers a new template with locale-specific content. English fallback is mandatory.")
+    @ApiResponse(responseCode = "201", description = "Template created successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request or missing mandatory English locale", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public Template create(
-            @RequestParam UUID tenantId,
-            @RequestParam String serviceId,
-            @RequestParam String templateKey,
-            @RequestBody Map<String, String> localeContent) {
+            @Parameter(description = "Tenant ID", required = true) @RequestParam UUID tenantId,
+            @Parameter(description = "Service identifier", required = true) @RequestParam String serviceId,
+            @Parameter(description = "Unique key for the template", required = true) @RequestParam String templateKey,
+            @Parameter(description = "Map of Locale tags to content strings", required = true, schema = @Schema(example = "{\"en\": \"Your invoice for {{amount}} is ready.\", \"vi\": \"Hóa đơn {{amount}} của bạn đã sẵn sàng.\"}")) @RequestBody Map<String, String> localeContent) {
         Map<Locale, String> content = toLocaleMap(localeContent);
         return manageTemplateUseCase.create(
                 new TenantId(tenantId), new ServiceId(serviceId), templateKey, content);
@@ -55,11 +65,12 @@ public class TemplateController {
      * Replaces the content of an existing template, incrementing its version.
      */
     @PutMapping("/{id}/content")
-    @Operation(summary = "Update template content",
-               description = "Replaces all locale variants and increments the version number.")
+    @Operation(summary = "Update template content", description = "Replaces all locale variants and increments the version number.")
+    @ApiResponse(responseCode = "200", description = "Template content updated successfully")
+    @ApiResponse(responseCode = "404", description = "Template not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public Template updateContent(
-            @PathVariable UUID id,
-            @RequestBody Map<String, String> localeContent) {
+            @Parameter(description = "ID of the template to update", required = true) @PathVariable UUID id,
+            @Parameter(description = "Map of Locale tags to new content" , required = true) @RequestBody Map<String, String> localeContent) {
         return manageTemplateUseCase.updateContent(id, toLocaleMap(localeContent));
     }
 
@@ -69,7 +80,9 @@ public class TemplateController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a template")
-    public void delete(@PathVariable UUID id) {
+    @ApiResponse(responseCode = "204", description = "Template deleted successfully")
+    @ApiResponse(responseCode = "404", description = "Template not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public void delete(@Parameter(description = "ID of the template to delete", required = true) @PathVariable UUID id) {
         manageTemplateUseCase.delete(id);
     }
 
@@ -77,12 +90,13 @@ public class TemplateController {
      * Looks up a template by its natural key: (tenant, service, templateKey).
      */
     @GetMapping("/lookup")
-    @Operation(summary = "Find template by natural key",
-               description = "Returns the template registered for the given (tenantId, serviceId, templateKey) combination.")
+    @Operation(summary = "Find template by natural key", description = "Returns the template registered for the given (tenantId, serviceId, templateKey) combination.")
+    @ApiResponse(responseCode = "200", description = "Template found")
+    @ApiResponse(responseCode = "404", description = "Template not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<Template> findByKey(
-            @RequestParam UUID tenantId,
-            @RequestParam String serviceId,
-            @RequestParam String templateKey) {
+            @Parameter(description = "Tenant ID", required = true) @RequestParam UUID tenantId,
+            @Parameter(description = "Service identifier", required = true) @RequestParam String serviceId,
+            @Parameter(description = "Template key", required = true) @RequestParam String templateKey) {
         return manageTemplateUseCase
                 .findByKey(new TenantId(tenantId), new ServiceId(serviceId), templateKey)
                 .map(ResponseEntity::ok)
@@ -94,7 +108,9 @@ public class TemplateController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get template by id")
-    public ResponseEntity<Template> findById(@PathVariable UUID id) {
+    @ApiResponse(responseCode = "200", description = "Template found")
+    @ApiResponse(responseCode = "404", description = "Template not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<Template> findById(@Parameter(description = "ID of the template", required = true) @PathVariable UUID id) {
         return manageTemplateUseCase.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -102,7 +118,10 @@ public class TemplateController {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Converts string locale keys ("en", "vi") from the JSON body to {@link Locale} objects. */
+    /**
+     * Converts string locale keys ("en", "vi") from the JSON body to {@link Locale}
+     * objects.
+     */
     private Map<Locale, String> toLocaleMap(Map<String, String> raw) {
         return raw.entrySet().stream()
                 .collect(java.util.stream.Collectors.toMap(

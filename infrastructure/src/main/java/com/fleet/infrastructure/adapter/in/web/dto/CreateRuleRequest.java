@@ -1,5 +1,6 @@
 package com.fleet.infrastructure.adapter.in.web.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,19 +9,14 @@ import java.util.UUID;
 
 /**
  * Request body for creating a new notification rule.
- *
- * @param tenantId        the owning tenant's UUID
- * @param serviceId       the service identifier that owns this rule
- * @param eventType       the event type this rule reacts to
- * @param conditions      the condition tree in JSON format
- * @param cooldownMinutes suppression window after triggering (must be >= 0)
- * @param active          whether the rule is initially active
  */
+@Schema(description = "Request body for creating a new notification rule")
 public record CreateRuleRequest(
-        @NotNull UUID tenantId,
-        @NotBlank String serviceId,
-        @NotBlank String eventType,
-        @NotNull Object conditions,
-        @Min(0) int cooldownMinutes,
-        boolean active
-) {}
+        @Schema(description = "The owning tenant's UUID", example = "550e8400-e29b-41d4-a716-446655440000") @NotNull UUID tenantId,
+        @Schema(description = "The service identifier that owns this rule", example = "billing-service") @NotBlank String serviceId,
+        @Schema(description = "The event type this rule reacts to", example = "INVOICE_GENERATED") @NotBlank String eventType,
+        @Schema(description = "The condition tree in JSON format", 
+                example = "{\"type\": \"AND\", \"children\": [{\"type\": \"equals\", \"field\": \"total_amount\", \"value\": 1000}, {\"type\": \"equals\", \"field\": \"currency\", \"value\": \"USD\"}]}") @NotNull Object conditions,
+        @Schema(description = "Suppression window after triggering (minutes)", example = "60") @Min(0) int cooldownMinutes,
+        @Schema(description = "Whether the rule is initially active", example = "true") boolean active) {
+}

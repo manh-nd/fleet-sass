@@ -1,15 +1,43 @@
 {
   "realm": "fleet",
   "enabled": true,
-  "displayName": "Fleet Notification Hub",
+  "displayName": "Fleet Platform",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
+  "groups": [
+    {
+      "name": "tenants",
+      "path": "/tenants",
+      "subGroups": [
+        {
+          "name": "avocado-transport",
+          "path": "/tenants/avocado-transport",
+          "attributes": {
+            "tenant_id": ["11111111-1111-1111-1111-111111111111"]
+          }
+        },
+        {
+          "name": "blue-fleet",
+          "path": "/tenants/blue-fleet",
+          "attributes": {
+            "tenant_id": ["22222222-2222-2222-2222-222222222222"]
+          }
+        }
+      ]
+    }
+  ],
   "roles": {
-    "realm": [
-      { "name": "fleet-admin",   "description": "Platform administrator — full access" },
-      { "name": "fleet-service", "description": "Consuming service — notification send + rule read" },
-      { "name": "fleet-viewer",  "description": "Read-only access to notification history" }
-    ]
+    "client": {
+      "fleet-notification-hub": [
+        { "name": "admin",  "description": "Service administrator — full access" },
+        { "name": "viewer", "description": "Read-only access to notifications" },
+        { "name": "sender", "description": "Permission to trigger notifications" }
+      ],
+      "fleet-tracking-service": [
+        { "name": "viewer", "description": "View live tracking data" },
+        { "name": "manager", "description": "Manage geofences and alerts" }
+      ]
+    }
   },
   "clients": [
     {
@@ -19,13 +47,45 @@
       "protocol": "openid-connect",
       "publicClient": false,
       "secret": "${KEYCLOAK_CLIENT_SECRET:fleet-secret-change-in-prod}",
-      "standardFlowEnabled": false,
+      "standardFlowEnabled": true,
       "serviceAccountsEnabled": true,
-      "authorizationServicesEnabled": false,
-      "directAccessGrantsEnabled": false
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "tenant-groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "tenants"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "fleet-tracking-service",
+      "name": "Fleet GPS Tracking",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false
     }
   ],
   "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@fleet.io",
+      "credentials": [
+        { "type": "password", "value": "admin", "temporary": false }
+      ],
+      "clientRoles": {
+        "fleet-notification-hub": [ "admin" ],
+        "fleet-tracking-service": [ "manager" ]
+      }
+    },
     {
       "username": "service-account-dev",
       "enabled": true,
@@ -33,7 +93,11 @@
       "credentials": [
         { "type": "password", "value": "devPassword123", "temporary": false }
       ],
-      "realmRoles": [ "fleet-service" ]
+      "clientRoles": {
+        "fleet-notification-hub": [ "sender", "viewer" ],
+        "fleet-tracking-service": [ "viewer" ]
+      },
+      "groups": [ "/tenants/avocado-transport" ]
     }
   ]
 }

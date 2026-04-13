@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U root -d fleet_db" ]
       interval: 5s
@@ -53,29 +54,29 @@ services:
       retries: 10
       start_period: 60s
 
-  fleet-notification-hub:
-    build:
-      context: .
-      dockerfile: infrastructure/Dockerfile
-    container_name: fleet_notification_hub
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/fleet_db
-      DB_USERNAME: root
-      DB_PASSWORD: rootpassword
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/fleet
-      FLEET_SECURITY_ENABLED: "true"
-      SPRING_PROFILES_ACTIVE: prod
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
+  # fleet-notification-hub:
+  #   build:
+  #     context: .
+  #     dockerfile: infrastructure/Dockerfile
+  #   container_name: fleet_notification_hub
+  #   environment:
+  #     DB_URL: jdbc:postgresql://postgres:5432/fleet_db
+  #     DB_USERNAME: root
+  #     DB_PASSWORD: rootpassword
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/fleet
+  #     FLEET_SECURITY_ENABLED: "true"
+  #     SPRING_PROFILES_ACTIVE: prod
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     keycloak:
+  #       condition: service_healthy
 
 volumes:
   postgres_data:

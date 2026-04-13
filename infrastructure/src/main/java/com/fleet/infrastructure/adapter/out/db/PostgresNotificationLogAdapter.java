@@ -1,5 +1,16 @@
 package com.fleet.infrastructure.adapter.out.db;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
 import com.fleet.domain.notification.model.DeliveryStatus;
@@ -8,24 +19,16 @@ import com.fleet.domain.notification.model.NotificationLog;
 import com.fleet.domain.notification.port.out.NotificationLogRepositoryPort;
 import com.fleet.domain.notification.vo.NotificationId;
 import com.fleet.domain.shared.pagination.CursorPage;
-import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 /**
  * PostgreSQL implementation of {@link NotificationLogRepositoryPort}.
  *
- * <p>Uses keyset cursor pagination on {@code id} (UUID), consistent with
- * {@link PostgresRuleRepositoryAdapter}.</p>
+ * <p>
+ * Uses keyset cursor pagination on {@code id} (UUID), consistent with
+ * {@link PostgresRuleRepositoryAdapter}.
+ * </p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -43,16 +46,16 @@ public class PostgresNotificationLogAdapter implements NotificationLogRepository
                     (:id, :tenantId, :serviceId, :channel, :recipient, :content,
                      :status, :failReason, :attempts, :createdAt)
                 """)
-                .param("id",         log.getId().value())
-                .param("tenantId",   log.getTenantId().value())
-                .param("serviceId",  log.getServiceId().value())
-                .param("channel",    log.getChannel().name())
-                .param("recipient",  log.getRecipient())
-                .param("content",    log.getRenderedContent())
-                .param("status",     log.getStatus().name())
+                .param("id", log.getId().value())
+                .param("tenantId", log.getTenantId().value())
+                .param("serviceId", log.getServiceId().value())
+                .param("channel", log.getChannel().name())
+                .param("recipient", log.getRecipient())
+                .param("content", log.getRenderedContent())
+                .param("status", log.getStatus().name())
                 .param("failReason", log.getFailReason())
-                .param("attempts",   log.getAttempts())
-                .param("createdAt",  Timestamp.from(log.getCreatedAt()))
+                .param("attempts", log.getAttempts())
+                .param("createdAt", Timestamp.from(log.getCreatedAt()))
                 .update();
     }
 
@@ -63,10 +66,10 @@ public class PostgresNotificationLogAdapter implements NotificationLogRepository
                 SET status = :status, fail_reason = :failReason, attempts = :attempts
                 WHERE id = :id
                 """)
-                .param("id",         log.getId().value())
-                .param("status",     log.getStatus().name())
+                .param("id", log.getId().value())
+                .param("status", log.getStatus().name())
                 .param("failReason", log.getFailReason())
-                .param("attempts",   log.getAttempts())
+                .param("attempts", log.getAttempts())
                 .update();
     }
 
@@ -126,7 +129,7 @@ public class PostgresNotificationLogAdapter implements NotificationLogRepository
     // ---- Private helpers ----
 
     private NotificationLog mapRow(ResultSet rs) throws SQLException {
-        var status    = DeliveryStatus.valueOf(rs.getString("status"));
+        var status = DeliveryStatus.valueOf(rs.getString("status"));
         var createdAtTimestamp = rs.getTimestamp("created_at");
         var createdAt = createdAtTimestamp != null ? createdAtTimestamp.toInstant() : null;
         return NotificationLog.reconstitute(

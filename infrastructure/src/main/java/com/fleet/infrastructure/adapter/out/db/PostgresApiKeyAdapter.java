@@ -1,29 +1,32 @@
 package com.fleet.infrastructure.adapter.out.db;
 
-import com.fleet.domain.entitlement.model.ApiKey;
-import com.fleet.domain.entitlement.port.out.ApiKeyRepositoryPort;
-import com.fleet.domain.entitlement.vo.ServiceId;
-import com.fleet.domain.entitlement.vo.TenantId;
-import lombok.RequiredArgsConstructor;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.fleet.domain.entitlement.model.ApiKey;
+import com.fleet.domain.entitlement.port.out.ApiKeyRepositoryPort;
+import com.fleet.domain.entitlement.vo.ServiceId;
+import com.fleet.domain.entitlement.vo.TenantId;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * PostgreSQL + Redis-cached implementation of {@link ApiKeyRepositoryPort}.
  *
- * <p>{@link Cacheable} caches the {@code findByHash} result in Redis under
+ * <p>
+ * {@link Cacheable} caches the {@code findByHash} result in Redis under
  * the {@code "apiKeys"} cache. The TTL is configured in {@code application.yml}
- * under {@code spring.cache.redis.time-to-live}.</p>
+ * under {@code spring.cache.redis.time-to-live}.
+ * </p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -51,14 +54,14 @@ public class PostgresApiKeyAdapter implements ApiKeyRepositoryPort {
                 INSERT INTO api_keys (id, tenant_id, service_id, key_hash, description, active, created_at, expires_at)
                 VALUES (:id, :tenantId, :serviceId, :keyHash, :description, :active, :createdAt, :expiresAt)
                 """)
-                .param("id",          apiKey.getId())
-                .param("tenantId",    apiKey.getTenantId().value())
-                .param("serviceId",   apiKey.getServiceId().value())
-                .param("keyHash",     apiKey.getKeyHash())
+                .param("id", apiKey.getId())
+                .param("tenantId", apiKey.getTenantId().value())
+                .param("serviceId", apiKey.getServiceId().value())
+                .param("keyHash", apiKey.getKeyHash())
                 .param("description", apiKey.getDescription())
-                .param("active",      apiKey.isActive())
-                .param("createdAt",   Timestamp.from(apiKey.getCreatedAt()))
-                .param("expiresAt",   apiKey.getExpiresAt() != null ? Timestamp.from(apiKey.getExpiresAt()) : null)
+                .param("active", apiKey.isActive())
+                .param("createdAt", Timestamp.from(apiKey.getCreatedAt()))
+                .param("expiresAt", apiKey.getExpiresAt() != null ? Timestamp.from(apiKey.getExpiresAt()) : null)
                 .update();
     }
 

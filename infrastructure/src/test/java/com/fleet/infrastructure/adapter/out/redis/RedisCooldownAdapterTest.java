@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RedisCooldownAdapterTest {
 
     @Container
+    @SuppressWarnings("resource")
     private static final GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
             .withExposedPorts(6379);
 

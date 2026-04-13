@@ -1,6 +1,5 @@
 package com.fleet.domain.notification.port.out;
 
-import com.fleet.domain.notification.model.NotificationLog;
 import com.fleet.domain.notification.vo.NotificationId;
 
 /**

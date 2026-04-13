@@ -4,7 +4,14 @@ import com.fleet.domain.entitlement.model.ApiKey;
 import com.fleet.domain.entitlement.port.out.ApiKeyRepositoryPort;
 import com.fleet.domain.entitlement.vo.ServiceId;
 import com.fleet.domain.entitlement.vo.TenantId;
+import com.fleet.infrastructure.adapter.in.web.dto.ApiKeyCreateResponse;
+import com.fleet.infrastructure.adapter.in.web.dto.ApiKeyResponse;
+import com.fleet.infrastructure.adapter.in.web.dto.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,18 +24,23 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * REST controller for managing service API keys.
  *
- * <p>API keys provide machine-to-machine authentication without requiring Keycloak tokens.
- * The plaintext key is only returned at creation time — subsequent lookups show only the
- * first 8 characters (masked) and metadata.</p>
+ * <p>
+ * API keys provide machine-to-machine authentication without requiring Keycloak
+ * tokens.
+ * The plaintext key is only returned at creation time — subsequent lookups show
+ * only the
+ * first 8 characters (masked) and metadata.
+ * </p>
  *
- * <p>Base path: {@code /api/v1/api-keys}</p>
+ * <p>
+ * Base path: {@code /api/v1/api-keys}
+ * </p>
  */
 @RestController
 @RequestMapping("/api/v1/api-keys")
@@ -41,19 +53,24 @@ public class ApiKeyController {
     /**
      * Issues a new API key for a service.
      *
-     * <p><b>The plaintext key is returned only once in this response — store it securely.</b></p>
+     * <p>
+     * <b>The plaintext key is returned only once in this response — store it
+     * securely.</b>
+     * </p>
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Issue a new API key",
-               description = "Creates and stores a new API key. The plaintext key is returned only once — it cannot be retrieved later.")
-    public Map<String, Object> create(
-            @RequestParam UUID tenantId,
-            @RequestParam String serviceId,
-            @RequestParam String description,
-            @RequestParam(required = false) Instant expiresAt) {
+    @Operation(summary = "Issue a new API key", description = "Creates and stores a new API key. The plaintext key is returned only once — it cannot be retrieved later.")
+    @ApiResponse(responseCode = "201", description = "API key created successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request or validation failed", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ApiKeyCreateResponse create(
+            @Parameter(description = "Tenant ID", required = true) @RequestParam UUID tenantId,
+            @Parameter(description = "Service identifier that will use this key", required = true) @RequestParam String serviceId,
+            @Parameter(description = "Human-readable description of the key", required = true) @RequestParam String description,
+            @Parameter(description = "Optional expiration timestamp") @RequestParam(required = false) Instant expiresAt) {
 
-        String plaintext = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+        String plaintext = UUID.randomUUID().toString().replace("-", "")
+                + UUID.randomUUID().toString().replace("-", "");
         String keyHash = hash(plaintext);
 
         ApiKey apiKey = ApiKey.create(
@@ -64,45 +81,50 @@ public class ApiKeyController {
                 expiresAt);
         apiKeyRepository.save(apiKey);
 
-        return Map.of(
-                "id",          apiKey.getId(),
-                "key",         plaintext,   // Shown once only
-                "serviceId",   serviceId,
-                "description", description,
-                "expiresAt",   expiresAt != null ? expiresAt.toString() : "never",
-                "warning",     "Store this key securely. It will not be shown again.");
+        return new ApiKeyCreateResponse(
+                apiKey.getId(),
+                plaintext, // Shown once only
+                serviceId,
+                description,
+                expiresAt,
+                "Store this key securely. It will not be shown again.");
     }
 
     /**
-     * Lists all API keys for a tenant (metadata only — never the plaintext or full hash).
+     * Lists all API keys for a tenant (metadata only — never the plaintext or full
+     * hash).
      */
     @GetMapping
     @Operation(summary = "List API keys for a tenant")
-    public List<Map<String, Object>> listByTenant(@RequestParam UUID tenantId) {
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved API keys")
+    public List<ApiKeyResponse> listByTenant(
+            @Parameter(description = "Tenant ID to list keys for", required = true) @RequestParam UUID tenantId) {
         return apiKeyRepository.findByTenant(new TenantId(tenantId))
                 .stream()
-                .map(k -> Map.<String, Object>of(
-                        "id",          k.getId(),
-                        "serviceId",   k.getServiceId().value(),
-                        "description", k.getDescription() != null ? k.getDescription() : "",
-                        "active",      k.isActive(),
-                        "valid",       k.isValid(),
-                        "createdAt",   k.getCreatedAt().toString(),
-                        "expiresAt",   k.getExpiresAt() != null ? k.getExpiresAt().toString() : "never"))
+                .map(k -> new ApiKeyResponse(
+                        k.getId(),
+                        k.getServiceId().value(),
+                        k.getDescription() != null ? k.getDescription() : "",
+                        k.isActive(),
+                        k.isValid(),
+                        k.getCreatedAt(),
+                        k.getExpiresAt()))
                 .toList();
     }
 
     /**
      * Revokes an API key, immediately rendering it invalid.
-     * The cached entry (Redis) is also evicted via {@code @CacheEvict} in the adapter.
+     * The cached entry (Redis) is also evicted via {@code @CacheEvict} in the
+     * adapter.
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Revoke an API key",
-               description = "Marks the key inactive. Active requests using this key will be rejected after the Redis cache TTL expires.")
+    @Operation(summary = "Revoke an API key", description = "Marks the key inactive. Active requests using this key will be rejected after the Redis cache TTL expires.")
+    @ApiResponse(responseCode = "204", description = "API key revoked successfully")
+    @ApiResponse(responseCode = "404", description = "API key not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<Void> revoke(
-            @PathVariable UUID id,
-            @RequestParam UUID tenantId) {
+            @Parameter(description = "ID of the key to revoke", required = true) @PathVariable UUID id,
+            @Parameter(description = "Tenant ID owner", required = true) @RequestParam UUID tenantId) {
         Optional<ApiKey> apiKey = apiKeyRepository.findByTenant(new TenantId(tenantId)).stream()
                 .filter(k -> k.getId().equals(id))
                 .findFirst();
