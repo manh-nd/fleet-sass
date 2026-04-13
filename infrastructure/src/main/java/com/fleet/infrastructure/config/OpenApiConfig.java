@@ -5,6 +5,9 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.OAuthFlow;
+import io.swagger.v3.oas.models.security.OAuthFlows;
+import io.swagger.v3.oas.models.security.Scopes;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -16,14 +19,21 @@ import java.util.List;
 /**
  * OpenAPI 3 documentation configuration using SpringDoc.
  *
- * <p>Swagger UI is available at: {@code http://localhost:8080/swagger-ui.html}</p>
- * <p>OpenAPI JSON spec at: {@code http://localhost:8080/v3/api-docs}</p>
+ * <p>
+ * Swagger UI is available at: {@code http://localhost:8080/swagger-ui.html}
+ * </p>
+ * <p>
+ * OpenAPI JSON spec at: {@code http://localhost:8080/v3/api-docs}
+ * </p>
  *
  * <h3>Authentication</h3>
- * <p>Two schemes are supported:</p>
+ * <p>
+ * Two schemes are supported:
+ * </p>
  * <ul>
- *   <li><b>BearerAuth</b> — Keycloak JWT ({@code Authorization: Bearer <token>})</li>
- *   <li><b>ApiKeyAuth</b> — service API key ({@code X-API-Key: <key>})</li>
+ * <li><b>BearerAuth</b> — Keycloak JWT
+ * ({@code Authorization: Bearer <token>})</li>
+ * <li><b>ApiKeyAuth</b> — service API key ({@code X-API-Key: <key>})</li>
  * </ul>
  */
 @Configuration
@@ -36,10 +46,10 @@ public class OpenApiConfig {
                         .title("Fleet Notification Hub API")
                         .description("""
                                 Centralized notification hub for fleet management services.
-                                
+
                                 Services can register, configure and trigger notifications
                                 through multiple channels (Email, SMS, Webhook, Push).
-                                
+
                                 Supports rule-based alerting and direct-send notifications
                                 with i18n template rendering and full delivery tracking.
                                 """)
@@ -51,14 +61,29 @@ public class OpenApiConfig {
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8080").description("Local Development"),
-                        new Server().url("https://api.fleet.io/notifications").description("Production")))
+                        new Server().url("http://localhost:8080")
+                                .description("Local Development"),
+                        new Server().url("https://api.fleet.io/notifications")
+                                .description("Production")))
                 .components(new Components()
                         .addSecuritySchemes("BearerAuth", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("Keycloak JWT — obtain via POST /realms/fleet/protocol/openid-connect/token"))
+                                .description(
+                                        "Keycloak JWT — obtain via POST /realms/fleet/protocol/openid-connect/token"))
+                        .addSecuritySchemes("KeycloakAuth", new SecurityScheme()
+                                .type(SecurityScheme.Type.OAUTH2)
+                                .description("Keycloak Authentication directly in Swagger (authorization code + PKCE)")
+                                .flows(new OAuthFlows()
+                                        .authorizationCode(new OAuthFlow()
+                                                .authorizationUrl(
+                                                        "http://localhost:8180/realms/fleet/protocol/openid-connect/auth")
+                                                .tokenUrl(
+                                                        "http://localhost:8180/realms/fleet/protocol/openid-connect/token")
+                                                .scopes(new Scopes()
+                                                        .addString("openid",
+                                                                "OpenID Connect")))))
                         .addSecuritySchemes("ApiKeyAuth", new SecurityScheme()
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
@@ -66,6 +91,7 @@ public class OpenApiConfig {
                                 .description("Service API key for machine-to-machine authentication")))
                 .addSecurityItem(new SecurityRequirement()
                         .addList("BearerAuth")
+                        .addList("KeycloakAuth")
                         .addList("ApiKeyAuth"));
     }
 }

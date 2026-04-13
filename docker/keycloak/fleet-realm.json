@@ -50,6 +50,10 @@
       "standardFlowEnabled": true,
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/swagger-ui/oauth2-redirect.html",
+        "http://localhost:8080/*"
+      ],
       "protocolMappers": [
         {
           "name": "tenant-groups",

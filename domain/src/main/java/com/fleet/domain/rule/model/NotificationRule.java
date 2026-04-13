@@ -29,6 +29,25 @@ public class NotificationRule {
     private final TenantId tenantId;
     private final ServiceId serviceId;
     private final String eventType;
+    /**
+     * The root node of the Abstract Syntax Tree (AST) representing the logical
+     * conditions that must be satisfied for this rule to trigger.
+     *
+     * <p>Example conditions:</p>
+     * <pre>{@code
+     * // Simple condition: temperature > 100
+     * RuleNode condition = new ConditionNode("temperature", Operator.GT, 100);
+     *
+     * // Composite condition: status == 'CRITICAL' AND priority >= 5
+     * RuleNode composite = new LogicalNode(
+     *     LogicalOperator.AND,
+     *     List.of(
+     *         new ConditionNode("status", Operator.EQ, "CRITICAL"),
+     *         new ConditionNode("priority", Operator.GTE, 5)
+     *     )
+     * );
+     * }</pre>
+     */
     private final RuleNode conditionRoot;
     private final boolean isActive;
     private final int cooldownMinutes;

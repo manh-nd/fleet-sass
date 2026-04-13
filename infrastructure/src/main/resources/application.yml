@@ -75,6 +75,12 @@ springdoc:
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha
+    oauth:
+      client-id: fleet-notification-hub
+      client-secret: fleet-secret-change-in-prod
+      realm: fleet
+      app-name: Fleet Notification Hub
+      use-pkce-with-authorization-code-grant: true
   api-docs:
     path: /v3/api-docs
   show-actuator: false
