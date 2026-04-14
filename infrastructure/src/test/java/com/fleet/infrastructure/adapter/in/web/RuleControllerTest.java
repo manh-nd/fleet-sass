@@ -74,7 +74,7 @@ class RuleControllerTest {
         UUID tenantId = UUID.randomUUID();
         CreateRuleRequest request = new CreateRuleRequest(
                 tenantId, "S1", "SPEEDING",
-                Map.of("type", "CONDITION", "field", "speed", "operator", ">", "value", 80),
+                Map.of("type", "CONDITION", "field", "speed", "operator", "gt", "value", 80),
                 5, true);
 
         ConditionNode mockNode = new ConditionNode("speed", Operator.GT, 80);
@@ -115,7 +115,7 @@ class RuleControllerTest {
         UUID tenantId = UUID.randomUUID();
         UpdateRuleRequest request = new UpdateRuleRequest(
                 tenantId, "S1", "SPEEDING",
-                Map.of("type", "CONDITION", "field", "speed", "operator", ">", "value", 90),
+                Map.of("type", "CONDITION", "field", "speed", "operator", "gt", "value", 90),
                 10, false);
 
         ConditionNode mockNode = new ConditionNode("speed", Operator.GT, 90);

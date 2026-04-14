@@ -21,7 +21,7 @@ class RuleAstParserTest {
 
     @Test
     void shouldParseNumericConditionNode() {
-        String json = "{\"type\":\"CONDITION\",\"field\":\"speed\",\"operator\":\">\",\"value\":80}";
+        String json = "{\"type\":\"CONDITION\",\"field\":\"speed\",\"operator\":\"gt\",\"value\":80}";
         RuleNode node = parser.parse(json);
 
         assertInstanceOf(ConditionNode.class, node);
@@ -34,7 +34,7 @@ class RuleAstParserTest {
 
     @Test
     void shouldParseBooleanConditionNode() {
-        String json = "{\"type\":\"CONDITION\",\"field\":\"cruise_control\",\"operator\":\"==\",\"value\":false}";
+        String json = "{\"type\":\"CONDITION\",\"field\":\"cruise_control\",\"operator\":\"eq\",\"value\":false}";
         RuleNode node = parser.parse(json);
 
         assertInstanceOf(ConditionNode.class, node);
@@ -45,7 +45,7 @@ class RuleAstParserTest {
 
     @Test
     void shouldParseConditionNodeWithInOperator() {
-        String json = "{\"type\":\"CONDITION\",\"field\":\"status\",\"operator\":\"IN\",\"value\":[\"ONLINE\",\"IDLE\"]}";
+        String json = "{\"type\":\"CONDITION\",\"field\":\"status\",\"operator\":\"in\",\"value\":[\"ONLINE\",\"IDLE\"]}";
         RuleNode node = parser.parse(json);
 
         assertInstanceOf(ConditionNode.class, node);
@@ -66,8 +66,8 @@ class RuleAstParserTest {
                   "type": "LOGICAL",
                   "operator": "AND",
                   "children": [
-                    {"type":"CONDITION","field":"speed","operator":">","value":80},
-                    {"type":"CONDITION","field":"fuel","operator":"<","value":10}
+                    {"type":"CONDITION","field":"speed","operator":"gt","value":80},
+                    {"type":"CONDITION","field":"fuel","operator":"lt","value":10}
                   ]
                 }
                 """;
@@ -81,7 +81,7 @@ class RuleAstParserTest {
 
     @Test
     void shouldThrowRuleParsingExceptionForUnknownNodeType() {
-        String json = "{\"type\":\"UNKNOWN\",\"field\":\"speed\",\"operator\":\">\",\"value\":80}";
+        String json = "{\"type\":\"UNKNOWN\",\"field\":\"speed\",\"operator\":\"gt\",\"value\":80}";
         assertThrows(RuleParsingException.class, () -> parser.parse(json));
     }
 
@@ -100,7 +100,7 @@ class RuleAstParserTest {
         assertNotNull(json);
         assertTrue(json.contains("\"type\":\"CONDITION\""), "type discriminator must be present");
         assertTrue(json.contains("\"field\":\"speed\""));
-        assertTrue(json.contains("\"operator\":\">\""), "operator should be serialized as symbol");
+        assertTrue(json.contains("\"operator\":\"gt\""), "operator should be serialized as symbol");
         assertTrue(json.contains("\"value\":80"));
     }
 
@@ -141,7 +141,7 @@ class RuleAstParserTest {
     @Test
     void shouldImplementRuleConditionSerializerViaDeserialize() {
         // Verify the port interface is correctly implemented
-        String json = "{\"type\":\"CONDITION\",\"field\":\"temperature\",\"operator\":\">\",\"value\":37.5}";
+        String json = "{\"type\":\"CONDITION\",\"field\":\"temperature\",\"operator\":\"gt\",\"value\":37.5}";
         RuleNode node = parser.deserialize(json);
         assertInstanceOf(ConditionNode.class, node);
     }

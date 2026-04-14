@@ -6,14 +6,14 @@ package com.fleet.domain.rule.ast;
  * invalid operator values from being constructed.
  */
 public enum Operator {
-    GT(">"),
-    LT("<"),
-    GTE(">="),
-    LTE("<="),
-    EQ("=="),
-    NEQ("!="),
-    IN("IN"),
-    NOT_IN("NOT_IN");
+    GT("gt"),
+    LT("lt"),
+    GTE("gte"),
+    LTE("lte"),
+    EQ("eq"),
+    NEQ("neq"),
+    IN("in"),
+    NOT_IN("not_in");
 
     private final String symbol;
 

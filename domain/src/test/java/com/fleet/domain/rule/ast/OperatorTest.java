@@ -8,14 +8,14 @@ class OperatorTest {
 
     @Test
     void shouldResolveFromSymbol() {
-        assertEquals(Operator.GT, Operator.fromSymbol(">"));
-        assertEquals(Operator.LT, Operator.fromSymbol("<"));
-        assertEquals(Operator.GTE, Operator.fromSymbol(">="));
-        assertEquals(Operator.LTE, Operator.fromSymbol("<="));
-        assertEquals(Operator.EQ, Operator.fromSymbol("=="));
-        assertEquals(Operator.NEQ, Operator.fromSymbol("!="));
-        assertEquals(Operator.IN, Operator.fromSymbol("IN"));
-        assertEquals(Operator.NOT_IN, Operator.fromSymbol("NOT_IN"));
+        assertEquals(Operator.GT, Operator.fromSymbol("gt"));
+        assertEquals(Operator.LT, Operator.fromSymbol("lt"));
+        assertEquals(Operator.GTE, Operator.fromSymbol("gte"));
+        assertEquals(Operator.LTE, Operator.fromSymbol("lte"));
+        assertEquals(Operator.EQ, Operator.fromSymbol("eq"));
+        assertEquals(Operator.NEQ, Operator.fromSymbol("neq"));
+        assertEquals(Operator.IN, Operator.fromSymbol("in"));
+        assertEquals(Operator.NOT_IN, Operator.fromSymbol("not_in"));
     }
 
     @Test
@@ -38,8 +38,8 @@ class OperatorTest {
 
     @Test
     void shouldExposeSymbol() {
-        assertEquals(">", Operator.GT.getSymbol());
-        assertEquals("!=", Operator.NEQ.getSymbol());
-        assertEquals("NOT_IN", Operator.NOT_IN.getSymbol());
+        assertEquals("gt", Operator.GT.getSymbol());
+        assertEquals("neq", Operator.NEQ.getSymbol());
+        assertEquals("not_in", Operator.NOT_IN.getSymbol());
     }
 }

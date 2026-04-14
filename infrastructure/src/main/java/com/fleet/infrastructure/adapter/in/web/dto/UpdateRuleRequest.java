@@ -16,7 +16,7 @@ public record UpdateRuleRequest(
         @Schema(description = "The calling service identifier", example = "billing-service") @NotBlank String serviceId,
         @Schema(description = "The event type this rule reacts to", example = "INVOICE_GENERATED") @NotBlank String eventType,
         @Schema(description = "The updated condition tree in JSON format", 
-                example = "{\"type\": \"LOGICAL\", \"operator\": \"AND\", \"children\": [{\"type\": \"CONDITION\", \"field\": \"total_amount\", \"operator\": \">=\", \"value\": 1000}, {\"type\": \"CONDITION\", \"field\": \"currency\", \"operator\": \"==\", \"value\": \"USD\"}]}") @NotNull Object conditions,
+                example = "{\"type\": \"LOGICAL\", \"operator\": \"AND\", \"children\": [{\"type\": \"CONDITION\", \"field\": \"total_amount\", \"operator\": \"gte\", \"value\": 1000}, {\"type\": \"CONDITION\", \"field\": \"currency\", \"operator\": \"eq\", \"value\": \"USD\"}]}") @NotNull Object conditions,
         @Schema(description = "Suppression window after triggering (minutes)", example = "60") @Min(0) int cooldownMinutes,
         @Schema(description = "Whether the rule should be active after the update", example = "true") boolean active) {
 }
