@@ -1,4 +1,4 @@
-package com.fleet.infrastructure.config;
+package com.fleet.config;
 
 import com.fleet.infrastructure.adapter.in.web.filter.ApiKeyAuthFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,15 +16,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Spring Security configuration for the Notification Hub.
  *
- * <p>Supports two authentication mechanisms:</p>
+ * <p>
+ * Supports two authentication mechanisms:
+ * </p>
  * <ol>
- *   <li><b>API Key</b> — {@code X-API-Key} header via {@link ApiKeyAuthFilter}
- *       (checked first; grants {@code ROLE_SERVICE})</li>
- *   <li><b>Keycloak JWT</b> — {@code Authorization: Bearer <token>} via
- *       Spring OAuth2 resource server</li>
+ * <li><b>API Key</b> — {@code X-API-Key} header via {@link ApiKeyAuthFilter}
+ * (checked first; grants {@code ROLE_SERVICE})</li>
+ * <li><b>Keycloak JWT</b> — {@code Authorization: Bearer <token>} via
+ * Spring OAuth2 resource server</li>
  * </ol>
  *
- * <p>Disabled when {@code fleet.security.enabled=false} (local dev / tests).</p>
+ * <p>
+ * Disabled when {@code fleet.security.enabled=false} (local dev / tests).
+ * </p>
  */
 @Configuration
 @EnableWebSecurity
@@ -50,12 +54,14 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/actuator/health",
                                 "/actuator/health/**",
-                                "/actuator/info").permitAll()
+                                "/actuator/info")
+                        .permitAll()
                         // Swagger UI — allow in dev; restrict in prod via properties if needed
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**").permitAll()
+                                "/v3/api-docs/**")
+                        .permitAll()
                         // All API endpoints require authentication (JWT or API key)
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -64,7 +70,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Maps Keycloak {@code realm_access.roles} claim to Spring Security {@code ROLE_*} authorities.
+     * Maps Keycloak {@code realm_access.roles} claim to Spring Security
+     * {@code ROLE_*} authorities.
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthConverter() {

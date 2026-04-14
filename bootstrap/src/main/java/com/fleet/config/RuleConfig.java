@@ -1,4 +1,4 @@
-package com.fleet.infrastructure.config;
+package com.fleet.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +24,8 @@ public class RuleConfig {
             CooldownPort cooldownPort,
             RuleEventPublisherPort ruleEventPublisherPort,
             CheckEntitlementUseCase checkEntitlementUseCase) {
-        return new EvaluateRulesService(ruleRepositoryPort, cooldownPort, ruleEventPublisherPort, checkEntitlementUseCase);
+        return new EvaluateRulesService(ruleRepositoryPort, cooldownPort, ruleEventPublisherPort,
+                checkEntitlementUseCase);
     }
 
     @Bean

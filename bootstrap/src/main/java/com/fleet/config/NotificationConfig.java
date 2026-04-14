@@ -1,4 +1,4 @@
-package com.fleet.infrastructure.config;
+package com.fleet.config;
 
 import com.fleet.application.notification.DispatchAlertService;
 import com.fleet.application.notification.ManageTemplateService;
@@ -35,7 +35,8 @@ public class NotificationConfig {
     }
 
     /**
-     * Direct-send notification service — consumed by the REST API and external services.
+     * Direct-send notification service — consumed by the REST API and external
+     * services.
      * Handles template rendering, dispatch, and delivery log persistence.
      */
     @Bean

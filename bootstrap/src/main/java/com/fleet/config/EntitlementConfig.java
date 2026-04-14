@@ -1,4 +1,4 @@
-package com.fleet.infrastructure.config;
+package com.fleet.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
