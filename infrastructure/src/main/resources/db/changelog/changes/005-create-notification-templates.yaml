@@ -18,27 +18,27 @@ databaseChangeLog:
                   type: VARCHAR(100)
                   constraints:
                     nullable: false
-                  comment: "Logical ID shared across locales (e.g. SPEED_ALERT)"
+                  remarks: "Logical ID shared across locales (e.g. SPEED_ALERT)"
               - column:
                   name: locale
                   type: VARCHAR(10)
                   constraints:
                     nullable: false
-                  comment: "BCP 47 locale tag (e.g. en, vi, fr)"
+                  remarks: "BCP 47 locale tag (e.g. en, vi, fr)"
               - column:
                   name: tenant_id
                   type: UUID
-                  comment: "NULL means system-wide template; non-null is tenant-specific override"
+                  remarks: "NULL means system-wide template; non-null is tenant-specific override"
               - column:
                   name: subject
                   type: VARCHAR(255)
-                  comment: "Optional: used as email subject or push notification title"
+                  remarks: "Optional: used as email subject or push notification title"
               - column:
                   name: body
                   type: TEXT
                   constraints:
                     nullable: false
-                  comment: "Template body with {{variable}} placeholders"
+                  remarks: "Template body with {{variable}} placeholders"
               - column:
                   name: created_at
                   type: TIMESTAMP
@@ -63,4 +63,4 @@ databaseChangeLog:
                   name: locale
               - column:
                   name: tenant_id
-            comment: "Fast lookup by templateId + locale + tenant (ordered: tenant-specific overrides first)"
+            remarks: "Fast lookup by templateId + locale + tenant (ordered: tenant-specific overrides first)"

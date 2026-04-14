@@ -28,7 +28,7 @@ databaseChangeLog:
                   type: VARCHAR(20)
                   constraints:
                     nullable: false
-                  comment: "EMAIL | SMS | WEBHOOK | PUSH"
+                  remarks: "EMAIL | SMS | WEBHOOK | PUSH"
               - column:
                   name: recipient
                   type: VARCHAR(500)
@@ -42,7 +42,7 @@ databaseChangeLog:
                   type: VARCHAR(20)
                   constraints:
                     nullable: false
-                  comment: "QUEUED | SENT | DELIVERED | FAILED"
+                  remarks: "QUEUED | SENT | DELIVERED | FAILED"
               - column:
                   name: fail_reason
                   type: TEXT
@@ -63,7 +63,7 @@ databaseChangeLog:
                   name: tenant_id
               - column:
                   name: id
-            comment: "Cursor-based pagination index"
+            remarks: "Cursor-based pagination index"
 
         - createIndex:
             tableName: notification_log
@@ -73,4 +73,4 @@ databaseChangeLog:
                   name: tenant_id
               - column:
                   name: status
-            comment: "Filter by tenant + delivery status for monitoring dashboards"
+            remarks: "Filter by tenant + delivery status for monitoring dashboards"

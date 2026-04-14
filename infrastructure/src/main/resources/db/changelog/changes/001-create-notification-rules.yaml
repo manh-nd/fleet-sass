@@ -67,4 +67,4 @@ databaseChangeLog:
                   name: tenant_id
               - column:
                   name: id
-            comment: "Composite index supporting cursor-based pagination (WHERE tenant_id = ? AND id > ? ORDER BY id)"
+            remarks: "Composite index supporting cursor-based pagination (WHERE tenant_id = ? AND id > ? ORDER BY id)"
