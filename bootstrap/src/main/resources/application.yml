@@ -41,6 +41,11 @@ spring:
 fleet:
   security:
     enabled: ${FLEET_SECURITY_ENABLED:true}
+  keycloak:
+    server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8180}
+    realm: ${KEYCLOAK_REALM:fleet}
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:fleet-notification-hub}
+    admin-client-secret: ${KEYCLOAK_CLIENT_SECRET:fleet-secret-change-in-prod}
   push:
     fcm:
       enabled: ${FLEET_FCM_ENABLED:false}

@@ -47,16 +47,17 @@ public class DispatchAlertService implements DispatchAlertUseCase {
             String message = renderTemplate(action.getMessageTemplate(), payload.data());
 
             switch (action.getChannelType()) {
-                case EMAIL   -> dispatcher.sendEmail(recipient, "Fleet Alert", message);
-                case SMS     -> dispatcher.sendSms(recipient, message);
+                case EMAIL -> dispatcher.sendEmail(recipient, "Fleet Alert", message);
+                case SMS -> dispatcher.sendSms(recipient, message);
                 case WEBHOOK -> dispatcher.sendWebhook(recipient, message);
-                case PUSH    -> dispatcher.sendPush(recipient, "Fleet Alert", message);
+                case PUSH -> dispatcher.sendPush(recipient, "Fleet Alert", message);
             }
         }
     }
 
     /**
-     * Replaces {@code {{variable}}} placeholders in the template with values from the payload.
+     * Replaces {@code {{variable}}} placeholders in the template with values from
+     * the payload.
      */
     private String renderTemplate(String template, Map<String, Object> data) {
         String result = template;

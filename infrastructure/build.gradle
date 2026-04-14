@@ -36,6 +36,7 @@ dependencies {
     implementation 'com.bucket4j:bucket4j-core:8.10.1'
     implementation 'com.bucket4j:bucket4j-redis:8.10.1'
     implementation 'com.google.firebase:firebase-admin:9.2.0'
+    implementation 'org.keycloak:keycloak-admin-client:24.0.0'
 
     // PostgreSQL JDBC driver (runtime only)
     runtimeOnly 'org.postgresql:postgresql'
