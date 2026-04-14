@@ -1,6 +1,7 @@
 package com.fleet.config;
 
 import com.fleet.infrastructure.adapter.in.web.filter.ApiKeyAuthFilter;
+import com.fleet.infrastructure.security.EnrichedJwtAuthenticationConverter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,28 +9,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Spring Security configuration for the Notification Hub.
- *
- * <p>
- * Supports two authentication mechanisms:
- * </p>
- * <ol>
- * <li><b>API Key</b> — {@code X-API-Key} header via {@link ApiKeyAuthFilter}
- * (checked first; grants {@code ROLE_SERVICE})</li>
- * <li><b>Keycloak JWT</b> — {@code Authorization: Bearer <token>} via
- * Spring OAuth2 resource server</li>
- * </ol>
- *
- * <p>
- * Disabled when {@code fleet.security.enabled=false} (local dev / tests).
- * </p>
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -37,9 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final ApiKeyAuthFilter apiKeyAuthFilter;
+    private final EnrichedJwtAuthenticationConverter enrichedJwtConverter;
 
-    public SecurityConfig(ApiKeyAuthFilter apiKeyAuthFilter) {
+    public SecurityConfig(ApiKeyAuthFilter apiKeyAuthFilter, EnrichedJwtAuthenticationConverter enrichedJwtConverter) {
         this.apiKeyAuthFilter = apiKeyAuthFilter;
+        this.enrichedJwtConverter = enrichedJwtConverter;
     }
 
     @Bean
@@ -65,22 +49,7 @@ public class SecurityConfig {
                         // All API endpoints require authentication (JWT or API key)
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter())))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(enrichedJwtConverter)))
                 .build();
-    }
-
-    /**
-     * Maps Keycloak {@code realm_access.roles} claim to Spring Security
-     * {@code ROLE_*} authorities.
-     */
-    @Bean
-    public JwtAuthenticationConverter jwtAuthConverter() {
-        var converter = new JwtGrantedAuthoritiesConverter();
-        converter.setAuthorityPrefix("ROLE_");
-        converter.setAuthoritiesClaimName("realm_access.roles");
-
-        var jwtConverter = new JwtAuthenticationConverter();
-        jwtConverter.setJwtGrantedAuthoritiesConverter(converter);
-        return jwtConverter;
     }
 }
