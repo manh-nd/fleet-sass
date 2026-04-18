@@ -3,15 +3,18 @@ package com.fleet.application.notification;
 import com.fleet.domain.notification.model.EmailSubscription;
 import com.fleet.domain.notification.model.NotificationAction;
 import com.fleet.domain.notification.model.NotificationAction.ChannelType;
+import com.fleet.domain.notification.port.out.EmailSenderPort;
 import com.fleet.domain.notification.port.out.NotificationActionRepositoryPort;
-import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
+import com.fleet.domain.notification.port.out.PushSenderPort;
+import com.fleet.domain.notification.port.out.SmsSenderPort;
 import com.fleet.domain.notification.port.out.SubscriptionCheckPort;
+import com.fleet.domain.notification.port.out.WebhookSenderPort;
 import com.fleet.domain.notification.vo.EmailAddress;
 import com.fleet.domain.rule.vo.EventPayload;
 import com.fleet.domain.rule.vo.RuleId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,11 +28,20 @@ import static org.mockito.Mockito.*;
 class DispatchAlertServiceTest {
 
     @Mock private NotificationActionRepositoryPort actionRepo;
-    @Mock private SubscriptionCheckPort subscriptionCheckPort;
-    @Mock private NotificationDispatcherPort dispatcher;
+    @Mock private SubscriptionCheckPort            subscriptionCheckPort;
+    @Mock private EmailSenderPort                  emailSender;
+    @Mock private SmsSenderPort                    smsSender;
+    @Mock private WebhookSenderPort                webhookSender;
+    @Mock private PushSenderPort                   pushSender;
 
-    @InjectMocks
     private DispatchAlertService service;
+
+    @BeforeEach
+    void setUp() {
+        ChannelDispatchRouter router = new ChannelDispatchRouter(
+                emailSender, smsSender, webhookSender, pushSender);
+        service = new DispatchAlertService(actionRepo, subscriptionCheckPort, router);
+    }
 
     @Test
     void shouldDispatchEmailWhenSubscribed() {
@@ -44,7 +56,7 @@ class DispatchAlertServiceTest {
 
         service.dispatch(ruleId, payload);
 
-        verify(dispatcher).sendEmail("test@test.com", "Fleet Alert", "Speed 100 reached!");
+        verify(emailSender).send("test@test.com", "Fleet Alert", "Speed 100 reached!");
     }
 
     @Test
@@ -60,7 +72,7 @@ class DispatchAlertServiceTest {
 
         service.dispatch(ruleId, payload);
 
-        verify(dispatcher, never()).sendEmail(anyString(), anyString(), anyString());
+        verify(emailSender, never()).send(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -76,7 +88,7 @@ class DispatchAlertServiceTest {
 
         service.dispatch(ruleId, payload);
 
-        verify(dispatcher, never()).sendEmail(anyString(), anyString(), anyString());
+        verify(emailSender, never()).send(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -89,7 +101,7 @@ class DispatchAlertServiceTest {
 
         service.dispatch(ruleId, payload);
 
-        verify(dispatcher).sendSms("0901234567", "Hi John!");
+        verify(smsSender).send("0901234567", "Hi John!");
     }
 
     @Test
@@ -102,7 +114,7 @@ class DispatchAlertServiceTest {
 
         service.dispatch(ruleId, payload);
 
-        verify(dispatcher).sendWebhook("http://endpoint.com", "Event: 123");
+        verify(webhookSender).send("http://endpoint.com", "Event: 123");
     }
 
     @Test
@@ -115,6 +127,6 @@ class DispatchAlertServiceTest {
 
         service.dispatch(ruleId, payload);
 
-        verify(dispatcher).sendPush("device-token-xyz", "Fleet Alert", "Entered zone A1");
+        verify(pushSender).send("device-token-xyz", "Fleet Alert", "Entered zone A1");
     }
 }

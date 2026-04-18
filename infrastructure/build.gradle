@@ -17,8 +17,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // Resilience (Implementation uses custom backoff loop, zero dependencies)
-
     // Persistence
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 
@@ -50,4 +48,5 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:testcontainers'
+    testImplementation 'org.testcontainers:localstack'   // AWS services: SES, SQS, SNS via LocalStack 4.x
 }

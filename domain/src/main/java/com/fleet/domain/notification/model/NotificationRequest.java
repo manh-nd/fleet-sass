@@ -19,6 +19,7 @@ import java.util.Objects;
  * @param serviceId   the calling service identity
  * @param channel     the delivery channel (EMAIL, SMS, WEBHOOK, PUSH)
  * @param recipient   email address / phone / device token / webhook URL
+ * @param subject     subject line (used for EMAIL; empty default for other channels)
  * @param templateId  optional template ID; if null, {@code body} is used as raw content
  * @param body        raw message body (used when no template is specified)
  * @param locale      locale for i18n template rendering (defaults to English if null)
@@ -29,6 +30,7 @@ public record NotificationRequest(
         ServiceId serviceId,
         ChannelType channel,
         String recipient,
+        String subject,
         String templateId,
         String body,
         Locale locale,
@@ -47,7 +49,8 @@ public record NotificationRequest(
         }
 
         // Defaults
-        if (locale == null) locale = Locale.ENGLISH;
+        if (subject == null)   subject   = "";
+        if (locale == null)    locale    = Locale.ENGLISH;
         if (variables == null) variables = Map.of();
     }
 }

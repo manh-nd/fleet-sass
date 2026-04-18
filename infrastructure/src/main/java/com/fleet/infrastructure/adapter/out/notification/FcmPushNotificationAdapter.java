@@ -1,6 +1,6 @@
 package com.fleet.infrastructure.adapter.out.notification;
 
-import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
+import com.fleet.domain.notification.port.out.PushSenderPort;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -10,40 +10,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Stub adapter for Firebase Cloud Messaging (FCM) push notifications.
+ * Firebase Cloud Messaging (FCM) adapter for push notifications.
  *
- * <p>Currently logs the intent and simulates a successful dispatch.
- * In production, replace this with the official Firebase Admin SDK:</p>
- * <pre>
- *   implementation 'com.google.firebase:firebase-admin:9.2.0'
- * </pre>
+ * <p>Only active when {@code fleet.push.fcm.enabled=true}. When disabled,
+ * {@link ConsolePushAdapter} handles the PUSH channel for dev and testing.</p>
  *
- * <p>This bean is only active when {@code fleet.push.fcm.enabled=true} is set.
- * When disabled, the {@code ConsoleNotificationAdapter} handles PUSH channel for dev/testing.</p>
+ * <p>This adapter implements only {@link PushSenderPort} — it has no knowledge
+ * of email, SMS, or webhooks, in line with the Interface Segregation Principle.</p>
  */
 @Component
 @ConditionalOnProperty(name = "fleet.push.fcm.enabled", havingValue = "true")
 @Slf4j
-public class FcmPushNotificationAdapter implements NotificationDispatcherPort {
+public class FcmPushNotificationAdapter implements PushSenderPort {
 
     @Override
-    public void sendEmail(String recipient, String subject, String body) {
-        // FCM adapter only handles PUSH — delegate email to another adapter via composition
-        throw new UnsupportedOperationException("FcmPushNotificationAdapter only handles PUSH channel");
-    }
-
-    @Override
-    public void sendSms(String recipient, String message) {
-        throw new UnsupportedOperationException("FcmPushNotificationAdapter only handles PUSH channel");
-    }
-
-    @Override
-    public void sendWebhook(String url, String payload) {
-        throw new UnsupportedOperationException("FcmPushNotificationAdapter only handles PUSH channel");
-    }
-
-    @Override
-    public void sendPush(String deviceToken, String title, String body) {
+    public void send(String deviceToken, String title, String body) {
         try {
             Message message = Message.builder()
                     .setToken(deviceToken)
@@ -57,8 +38,10 @@ public class FcmPushNotificationAdapter implements NotificationDispatcherPort {
             log.info("Successfully sent FCM message: {}", response);
         } catch (FirebaseMessagingException e) {
             log.error("Failed to send FCM message to token: {}", deviceToken, e);
+            throw new RuntimeException("FCM dispatch failed for token: " + deviceToken, e);
         } catch (Exception e) {
             log.error("Unexpected error sending FCM message", e);
+            throw new RuntimeException("Unexpected FCM error", e);
         }
     }
 }

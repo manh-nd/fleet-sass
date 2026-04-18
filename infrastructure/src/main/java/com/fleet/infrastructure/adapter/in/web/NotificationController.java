@@ -57,10 +57,12 @@ public class NotificationController {
                 new ServiceId(req.serviceId()),
                 ChannelType.fromString(req.channel()),
                 req.recipient(),
+                req.subject() != null ? req.subject() : "",
                 req.templateId(),
                 req.body(),
                 locale,
                 req.variables());
+
 
         NotificationResult result = sendNotificationUseCase.send(request);
         return ResponseEntity.ok(result);

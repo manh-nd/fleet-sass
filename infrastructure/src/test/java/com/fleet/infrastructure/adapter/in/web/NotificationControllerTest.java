@@ -57,6 +57,7 @@ class NotificationControllerTest {
 
         SendNotificationRequest request = new SendNotificationRequest(
                 tenantId, "FLEET-CORE", "EMAIL", "driver@fleet.com",
+                "Fleet Speed Alert",
                 null, "Speed alert: {{speed}} km/h",
                 "en", Map.of("speed", 120));
 
@@ -80,6 +81,7 @@ class NotificationControllerTest {
 
         SendNotificationRequest request = new SendNotificationRequest(
                 tenantId, "FLEET-CORE", "EMAIL", "bad@fleet.com",
+                "",
                 null, "Alert body", "en", Map.of());
 
         NotificationResult result = NotificationResult.failed(
@@ -147,6 +149,7 @@ class NotificationControllerTest {
         UUID tenantId = UUID.randomUUID();
         SendNotificationRequest request = new SendNotificationRequest(
                 tenantId, "FLEET-CORE", "INVALID_CHANNEL", "driver@fleet.com",
+                "",
                 null, "Alert body", "en", Map.of());
 
         // ChannelType.fromString("INVALID_CHANNEL") throws IllegalArgumentException

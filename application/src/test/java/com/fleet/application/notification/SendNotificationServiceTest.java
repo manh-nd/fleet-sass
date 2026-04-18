@@ -8,13 +8,16 @@ import com.fleet.domain.notification.model.NotificationLog;
 import com.fleet.domain.notification.model.NotificationRequest;
 import com.fleet.domain.notification.model.NotificationResult;
 import com.fleet.domain.notification.port.out.DeadLetterQueuePort;
-import com.fleet.domain.notification.port.out.NotificationDispatcherPort;
+import com.fleet.domain.notification.port.out.EmailSenderPort;
 import com.fleet.domain.notification.port.out.NotificationLogRepositoryPort;
+import com.fleet.domain.notification.port.out.PushSenderPort;
+import com.fleet.domain.notification.port.out.SmsSenderPort;
 import com.fleet.domain.notification.port.out.TemplateRenderPort;
+import com.fleet.domain.notification.port.out.WebhookSenderPort;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,13 +33,22 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SendNotificationServiceTest {
 
-    @Mock private NotificationDispatcherPort dispatcher;
-    @Mock private TemplateRenderPort templateRenderer;
+    @Mock private EmailSenderPort   emailSender;
+    @Mock private SmsSenderPort     smsSender;
+    @Mock private WebhookSenderPort webhookSender;
+    @Mock private PushSenderPort    pushSender;
+    @Mock private TemplateRenderPort         templateRenderer;
     @Mock private NotificationLogRepositoryPort logRepository;
-    @Mock private DeadLetterQueuePort deadLetterQueue;
+    @Mock private DeadLetterQueuePort        deadLetterQueue;
 
-    @InjectMocks
     private SendNotificationService service;
+
+    @BeforeEach
+    void setUp() {
+        ChannelDispatchRouter router = new ChannelDispatchRouter(
+                emailSender, smsSender, webhookSender, pushSender);
+        service = new SendNotificationService(router, templateRenderer, logRepository, deadLetterQueue);
+    }
 
     private final TenantId tenantId   = new TenantId(UUID.randomUUID());
     private final ServiceId serviceId = new ServiceId("REMODUL");
@@ -46,6 +58,7 @@ class SendNotificationServiceTest {
         NotificationRequest request = new NotificationRequest(
                 tenantId, serviceId,
                 ChannelType.EMAIL, "driver@fleet.com",
+                "Fleet Speed Alert",
                 null, "Speed: {{speed}} km/h",
                 Locale.ENGLISH, Map.of("speed", 100));
 
@@ -57,8 +70,8 @@ class SendNotificationServiceTest {
         assertNotNull(result.notificationId());
         assertNull(result.failReason());
 
-        // Verify email was dispatched
-        verify(dispatcher).sendEmail(eq("driver@fleet.com"), eq("Fleet Notification"), eq("Speed: 100 km/h"));
+        // Verify email was dispatched with the provided subject
+        verify(emailSender).send(eq("driver@fleet.com"), eq("Fleet Speed Alert"), eq("Speed: 100 km/h"));
 
         // Verify log was saved (QUEUED) then updated (SENT)
         ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
@@ -76,30 +89,32 @@ class SendNotificationServiceTest {
         NotificationRequest request = new NotificationRequest(
                 tenantId, serviceId,
                 ChannelType.SMS, "0901234567",
+                "",
                 "SPEED_ALERT", null,
                 Locale.of("vi"), Map.of("speed", 120));
 
         NotificationResult result = service.send(request);
 
         assertEquals(DeliveryStatus.SENT, result.status());
-        verify(dispatcher).sendSms("0901234567", "Cảnh báo tốc độ: 120 km/h");
+        verify(smsSender).send("0901234567", "Cảnh báo tốc độ: 120 km/h");
     }
 
     @Test
-    void shouldReturnFailedResultWhenDispatcherThrows() {
+    void shouldReturnFailedResultWhenSenderThrows() {
         doThrow(new RuntimeException("Network timeout"))
-                .when(dispatcher).sendEmail(any(), any(), any());
+                .when(emailSender).send(any(), any(), any());
 
         NotificationRequest request = new NotificationRequest(
                 tenantId, serviceId,
                 ChannelType.EMAIL, "user@example.com",
+                "",
                 null, "Hello Bob",
                 Locale.ENGLISH, Map.of());
 
         NotificationResult failedResult = service.send(request);
 
-        // Should attempt dispatch 3 times (due to retry loop) but catch exception
-        verify(dispatcher, times(3)).sendEmail(eq("user@example.com"), eq("Fleet Notification"), eq("Hello Bob"));
+        // Single dispatch attempt (no retry loop in the service layer)
+        verify(emailSender, times(1)).send(eq("user@example.com"), any(), eq("Hello Bob"));
 
         // Status should be marked FAILED
         assertEquals(DeliveryStatus.FAILED, failedResult.status());
@@ -107,7 +122,7 @@ class SendNotificationServiceTest {
 
         // Should push to Dead Letter Queue
         verify(deadLetterQueue).enqueue(any(), eq("Network timeout"));
-        
+
         // Log should be updated to FAILED
         verify(logRepository).update(argThat(log -> log.getStatus() == DeliveryStatus.FAILED));
     }
@@ -117,12 +132,13 @@ class SendNotificationServiceTest {
         NotificationRequest request = new NotificationRequest(
                 tenantId, serviceId,
                 ChannelType.PUSH, "device-token-abc",
+                "Geofence Alert",
                 null, "Geofence breach detected",
                 Locale.ENGLISH, Map.of());
 
         service.send(request);
 
-        verify(dispatcher).sendPush("device-token-abc", "Fleet Notification", "Geofence breach detected");
+        verify(pushSender).send("device-token-abc", "Geofence Alert", "Geofence breach detected");
     }
 
     @Test
@@ -130,11 +146,12 @@ class SendNotificationServiceTest {
         NotificationRequest request = new NotificationRequest(
                 tenantId, serviceId,
                 ChannelType.WEBHOOK, "https://hook.example.com",
+                "",
                 null, "Unit {{id}} entered zone {{zone}}",
                 Locale.ENGLISH, Map.of("id", "V001", "zone", "A1"));
 
         service.send(request);
 
-        verify(dispatcher).sendWebhook("https://hook.example.com", "Unit V001 entered zone A1");
+        verify(webhookSender).send("https://hook.example.com", "Unit V001 entered zone A1");
     }
 }

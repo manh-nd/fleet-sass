@@ -45,6 +45,16 @@ subprojects {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
+    tasks.named('compileJava') {
+        // Required by Spring: embeds method parameter names so @PathVariable / @RequestParam
+        // binding works without explicit name= attribute in standalone MockMvc tests.
+        options.compilerArgs << '-parameters'
+    }
+
+    tasks.named('compileTestJava') {
+        options.compilerArgs << '-parameters'
+    }
+
     tasks.named('test') {
         useJUnitPlatform()
         finalizedBy jacocoTestReport

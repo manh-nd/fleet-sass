@@ -2,7 +2,13 @@ package com.fleet.domain.notification.port.out;
 
 /**
  * Outbound port for dispatching notifications through multiple channels.
+ *
+ * @deprecated Replaced by focused single-responsibility ports:
+ *             {@link EmailSenderPort}, {@link SmsSenderPort},
+ *             {@link WebhookSenderPort}, {@link PushSenderPort}.
+ *             This interface will be removed once all adapters are migrated.
  */
+@Deprecated(since = "3.1.0", forRemoval = true)
 public interface NotificationDispatcherPort {
 
     void sendEmail(String to, String subject, String body);
